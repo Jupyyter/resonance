@@ -6,15 +6,17 @@ Built step by step as a university web development project.
 
 ## What's there so far
 
-- A product catalogue with sorting, filtering by several tags at once, and pagination that keeps every parameter
+- A product catalogue with a filter form for every column (price range, brand, condition, dates, tags), a choice of 1 to 3 columns, and filtering that updates the list without reloading the page
 - Product pages with recordings to play and random suggestions from the same category
-- Category pages with their own colour and icon, and a Categories menu built from the database
-- Shop pages built from template inheritance, with a CSS-only dropdown menu that folds on phones
-- A catalogue of six related models: instruments, categories, brands, distributors, services, and recordings, the weak entity
+- Category pages with their own colour and icon, and an Instrument categories menu built from the database
+- Accounts: sign-up with a delivery address and an optional profile, a login that can last a day, a profile page, and pages to change the details or the password
+- A contact form checked on the server, which saves each message as a JSON file by department, with a staff page to read them
+- Sixteen related models: the catalogue (instruments, categories, brands, distributors, services, recordings), users and their profiles, employees, departments and contact message types, orders and the instruments in them, reviews, favourites and questions
 - Data rules enforced twice: by Django with readable messages, and by PostgreSQL `CHECK` constraints
 - A customised admin in the shop's colours, with search, filters and CSV and JSON export
 - A visit log kept by middleware, with a filterable `/log` page
-- Tests for the pages and the model rules
+- Batch scripts that back up the database as `INSERT` commands and load a backup back
+- Tests for the pages, forms, accounts and model rules
 
 ## Run it locally
 
@@ -37,4 +39,6 @@ The shop is at http://127.0.0.1:8000/ and the admin at http://127.0.0.1:8000/adm
 
 ## Database
 
-![Database diagram](docs/diagrama-bd.png)
+![Database diagram](docs/diagrama-bd-utilizatori.png)
+
+The diagram uses Chen notation; [`docs/diagrama-bd-utilizatori.drawio`](docs/diagrama-bd-utilizatori.drawio) opens in draw.io. The first version, with the catalogue only, is [`docs/diagrama-bd.png`](docs/diagrama-bd.png).
