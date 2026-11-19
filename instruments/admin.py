@@ -2,6 +2,7 @@ import csv
 import json
 
 from django.contrib import admin, messages
+from django.contrib.auth.admin import UserAdmin as UserAdminDjango
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Count
 from django.http import HttpResponse
@@ -9,7 +10,24 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import Brand, Category, Department, Distributor, Instrument, MessageType, Recording, Service
+from .models import (
+    Brand,
+    Category,
+    Department,
+    Distributor,
+    Employee,
+    Favorite,
+    Instrument,
+    MessageType,
+    Order,
+    OrderItem,
+    Profile,
+    Question,
+    Recording,
+    Review,
+    Service,
+    User,
+)
 
 # The admin's own texts. The look (colours, logo) is in templates/admin/base_site.html and css/admin.css.
 admin.site.site_title = "Resonance back office"  # the browser tab
@@ -192,9 +210,10 @@ class RecordingAdmin(MesajeDinModel, admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(MesajeDinModel, admin.ModelAdmin):
-    list_display = ["name", "slug"]
+    list_display = ["name", "slug", "head"]
     search_fields = ["name", "slug"]
     prepopulated_fields = {"slug": ["name"]}  # the slug is typed for you from the name
+    autocomplete_fields = ["head"]
 
 
 @admin.register(MessageType)
@@ -219,3 +238,106 @@ class MessageTypeAdmin(MesajeDinModel, admin.ModelAdmin):
     def get_queryset(self, request):
         # the departments of every row in one query, instead of one per row
         return super().get_queryset(request).prefetch_related("departments")
+
+
+# ---------- Accounts, orders and what users write (lab 6) ----------
+
+
+class ProfileInline(admin.StackedInline):
+    """The profile, on the user's page: it's only a few optional details of the same person."""
+
+    model = Profile
+    can_delete = True
+    extra = 0
+    max_num = 1
+
+
+class EmployeeInline(admin.StackedInline):
+    model = Employee
+    extra = 0
+    max_num = 1
+    fk_name = "user"
+
+
+@admin.register(User)
+class UserAdmin(MesajeDinModel, UserAdminDjango):
+    """Django's own user admin (password hashing, permissions), plus the delivery details."""
+
+    list_display = ["username", "email", "first_name", "last_name", "city", "is_staff"]
+    list_filter = ["is_staff", "is_active", "country", "county"]
+    search_fields = ["username", "first_name", "last_name", "email", "city"]
+    search_help_text = "Searches usernames, names, emails and cities."
+    fieldsets = [
+        *UserAdminDjango.fieldsets,
+        ("Delivery details", {"fields": ["phone", "country", "county", "city", "street"]}),
+    ]
+    add_fieldsets = [
+        *UserAdminDjango.add_fieldsets,
+        ("Contact and delivery", {"fields": ["email", "first_name", "last_name", "phone", "country", "county", "city", "street"]}),
+    ]
+    inlines = [ProfileInline, EmployeeInline]
+
+
+@admin.register(Employee)
+class EmployeeAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["__str__", "job_title", "department", "hired_on"]
+    list_filter = ["department"]
+    search_fields = ["user__first_name", "user__last_name", "user__username", "job_title"]
+    search_help_text = "Searches names, usernames and job titles."
+    autocomplete_fields = ["user"]
+
+
+class OrderItemInline(admin.TabularInline):
+    """The order's instruments, on the order's page: the link table's rows, with quantity and price."""
+
+    model = OrderItem
+    extra = 1
+    autocomplete_fields = ["instrument"]
+
+
+@admin.register(Order)
+class OrderAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["__str__", "placed_at", "status", "by_courier", "payment_method", "total_lei"]
+    list_filter = ["status", "by_courier", "payment_method", "placed_at"]
+    search_fields = ["user__username", "user__email"]
+    search_help_text = "Searches the customer's username and email."
+    autocomplete_fields = ["user"]
+    inlines = [OrderItemInline]
+
+    @admin.display(description="Total")
+    def total_lei(self, comanda):
+        return f"{comanda.total():,.2f} lei"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user").prefetch_related("items")
+
+
+@admin.register(Review)
+class ReviewAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["instrument", "user", "rating", "created_at"]
+    list_filter = ["rating"]
+    search_fields = ["instrument__name", "user__username", "text"]
+    search_help_text = "Searches instrument names, usernames and the reviews' text."
+    autocomplete_fields = ["user", "instrument"]
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["instrument", "user", "added_at", "price_alert"]
+    list_filter = ["price_alert"]
+    search_fields = ["instrument__name", "user__username"]
+    search_help_text = "Searches instrument names and usernames."
+    autocomplete_fields = ["user", "instrument"]
+
+
+@admin.register(Question)
+class QuestionAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["instrument", "user", "asked_at", "answered"]
+    list_filter = ["asked_at"]
+    search_fields = ["instrument__name", "user__username", "text", "answer"]
+    search_help_text = "Searches instrument names, usernames, questions and answers."
+    autocomplete_fields = ["user", "instrument", "answered_by"]
+
+    @admin.display(description="Answered", boolean=True)
+    def answered(self, intrebare):
+        return bool(intrebare.answer)

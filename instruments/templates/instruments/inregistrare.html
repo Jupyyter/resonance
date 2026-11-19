@@ -1,0 +1,47 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Sign up | Resonance{% endblock %}
+
+{% block continut %}
+<h1>Sign up</h1>
+<p class="introducere">An account keeps your delivery address, your orders and your wish list in one place. Fields marked with * are required.</p>
+
+{# novalidate: the server checks every field and answers with its own messages #}
+<form class="formular" method="post" novalidate>
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <fieldset>
+    <legend>Your account</legend>
+    {% include "instruments/camp.html" with camp=form.username %}
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.password1 %}
+      {% include "instruments/camp.html" with camp=form.password2 %}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>About you</legend>
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.first_name %}
+      {% include "instruments/camp.html" with camp=form.last_name %}
+    </div>
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.email %}
+      {% include "instruments/camp.html" with camp=form.phone %}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Delivery address</legend>
+    {% include "instruments/camp.html" with camp=form.street %}
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.city %}
+      {% include "instruments/camp.html" with camp=form.county %}
+    </div>
+    {% include "instruments/camp.html" with camp=form.country %}
+  </fieldset>
+  {% include "instruments/campuri_profil.html" %}
+  <div class="formular-butoane">
+    <button type="submit">Create my account</button>
+    <p class="formular-alternativa">Already have one? <a href="{% url 'instruments:login' %}">Log in</a></p>
+  </div>
+</form>
+{% endblock %}

@@ -5,9 +5,11 @@ A form field runs the ones in its validators=[...] list, in that order, after it
 and only when the value isn't empty. Written once here, each is used on several fields.
 """
 import re
+import unicodedata
 from datetime import date
 
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 
 # A "word": letters and digits only. [^\W_] is "a word character, but not _", so any Unicode letter
 # (ă, ș, é...) counts, and everything else (spaces, punctuation, _) separates words.
@@ -112,3 +114,65 @@ def cnp_valid(cnp):
         raise ValidationError("A CNP starts with 1, 2, 5 or 6.", code="cnp_inceput")
     if data_din_cnp(cnp) is None:
         raise ValidationError("Digits 2 to 7 of a CNP are a birth date (YYMMDD), and these aren't a real date.", code="cnp_data")
+
+
+# ---------- accounts and addresses (lab 6) ----------
+
+# A Romanian number (0721 000 000) or one with + and the country code (+44 20 0000 0000).
+# Used by the contact form and by the users' phone column.
+telefon_valid = RegexValidator(
+    r"^(\+[1-9][0-9 ]{7,17}|0[0-9 ]{9,12})$",
+    "Write the number as 0721 000 000, or with + and the country code.",
+    code="telefon_invalid",
+)
+
+# The 41 counties, and Bucharest, which has the same standing
+JUDETE = (
+    "Alba", "Arad", "Argeș", "Bacău", "Bihor", "Bistrița-Năsăud", "Botoșani", "Brăila", "Brașov",
+    "București", "Buzău", "Călărași", "Caraș-Severin", "Cluj", "Constanța", "Covasna", "Dâmbovița",
+    "Dolj", "Galați", "Giurgiu", "Gorj", "Harghita", "Hunedoara", "Ialomița", "Iași", "Ilfov",
+    "Maramureș", "Mehedinți", "Mureș", "Neamț", "Olt", "Prahova", "Sălaj", "Satu Mare", "Sibiu",
+    "Suceava", "Teleorman", "Timiș", "Tulcea", "Vâlcea", "Vaslui", "Vrancea",
+)
+
+
+def fara_diacritice(text):
+    """"Iași" → "iasi", and "Iaşi" (ş with a cedilla, from older keyboards) too: NFD splits each
+    letter from its accent, and the accents (category Mn) are dropped."""
+    descompus = unicodedata.normalize("NFD", text.strip())
+    return "".join(c for c in descompus if unicodedata.category(c) != "Mn").casefold()
+
+
+def e_romania(tara):
+    return fara_diacritice(tara) == "romania"
+
+
+def judet_roman(text):
+    """The county named by text, written properly ("iasi" → "Iași"); an error if there's none."""
+    cautat = fara_diacritice(text)
+    if cautat in ("bucharest", "bucuresti"):
+        return "București"
+    for judet in JUDETE:
+        if fara_diacritice(judet) == cautat:
+            return judet
+    raise ValidationError(
+        "“%(judet)s” isn't a Romanian county. Write it like Cluj, Iași or București.",
+        code="judet_necunoscut",
+        params={"judet": text},
+    )
+
+
+def strada_cu_numar(text):
+    """A street address has the street's name and a number: Strada Rezonanței 7."""
+    if not any(c.isalpha() for c in text):
+        raise ValidationError("Write the street's name too, like Strada Rezonanței 7.", code="fara_nume_strada")
+    if not any(c.isdigit() for c in text):
+        raise ValidationError("Add the number too, like Strada Rezonanței 7.", code="fara_numar")
+
+
+def data_nasterii_plauzibila(nascut):
+    """Not in the future, and not before 1900."""
+    if nascut > date.today():
+        raise ValidationError("That date is in the future.", code="in_viitor")
+    if nascut.year < 1900:
+        raise ValidationError("Check the year: it's before 1900.", code="prea_vechi")

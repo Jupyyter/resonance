@@ -1,6 +1,9 @@
 """Fills the department and message type tables, and the links between them.
 
 A data migration: it runs once, with "migrate", like the migrations that create tables.
+(Lab 5's 0005_contact_data.py, kept when lab 6 started the migrations over: a new database
+still gets the departments the contact form needs. A backup loaded afterwards skips these rows,
+since they're already there.)
 Each message type goes to its own set of departments; the sets overlap but none is the same.
 """
 from django.db import migrations
@@ -40,6 +43,6 @@ def sterge(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("instruments", "0004_contact_departments_message_types")]
+    dependencies = [("instruments", "0001_initial")]
     # the second function undoes the first, so "migrate instruments 0004" can go back
     operations = [migrations.RunPython(adauga, sterge)]

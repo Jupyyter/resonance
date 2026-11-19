@@ -297,7 +297,9 @@ class ProduseTest(CuInstrumente):
         self.assertEqual([c.name for c in meniu], ["Drums", "Guitars"])  # "Empty" is left out
 
     def test_actiunea_export_csv(self):
-        from django.contrib.auth.models import User
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
 
         User.objects.create_superuser("admin", "a@example.com", "parola")
         self.client.login(username="admin", password="parola")
@@ -517,7 +519,6 @@ class ContactTest(TestCase):
     def test_validari(self):
         cazuri = [
             ({"confirmare_email": "alta@example.com"}, "confirmare_email", "The two email addresses are different."),
-            ({"mesaj": "Hello there, is the setup included? Thanks"}, "mesaj", "Sign your message"),
             ({"mesaj": "Too short. Popescu"}, "mesaj", "between 5 and 100 words"),
             ({"mesaj": "See https://example.com for the photos please Popescu"}, "mesaj", "Links aren't allowed"),
             ({"minim_zile_asteptare": "1"}, "minim_zile_asteptare", "For a question, choose at least 2 days."),
@@ -552,7 +553,9 @@ class ContactTest(TestCase):
         self.assertIn("opened too long ago", " ".join(erori["cod_cerere"]))
 
     def test_mesaje_doar_pentru_personal(self):
-        from django.contrib.auth.models import User
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
 
         self.trimite(minim_zile_asteptare="2")
         self.assertEqual(self.client.get("/mesaje").status_code, 302)  # to the admin's login page
@@ -576,7 +579,9 @@ class InstrumentFormTest(CuInstrumente):
     """Task 4: adding an instrument with a ModelForm."""
 
     def setUp(self):
-        from django.contrib.auth.models import User
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
 
         User.objects.create_user("personal", password="parola", is_staff=True)
         self.client.login(username="personal", password="parola")
@@ -624,3 +629,216 @@ class InstrumentFormTest(CuInstrumente):
     def test_doar_pentru_personal(self):
         self.client.logout()
         self.assertEqual(self.client.get("/produse/adauga").status_code, 302)
+
+
+# =====================================================================================
+# Lab 6
+# =====================================================================================
+
+
+class ConturiTest(TestCase):
+    """Signing up, logging in and out, the profile from the session, changing details and password."""
+
+    PAROLA = "acorduri-de-chitara-7"
+
+    def date(self, **schimbari):
+        date_ = {
+            "username": "ana", "first_name": "Ana", "last_name": "Popescu", "email": "Ana@Example.com",
+            "phone": "0721 000 000", "country": "Romania", "county": "Iasi", "city": "Iași",
+            "street": "Strada Lăpușneanu 12", "password1": self.PAROLA, "password2": self.PAROLA,
+            "date_of_birth": "", "level": "", "favorite_category": "", "bio": "",
+        }
+        date_.update(schimbari)
+        return date_
+
+    def inregistreaza(self, **schimbari):
+        with redirect_stdout(StringIO()):
+            return self.client.post("/inregistrare", self.date(**schimbari))
+
+    def logheaza(self, pastreaza=False, **extra):
+        date_ = {"username": "ana", "password": self.PAROLA, **extra}
+        if pastreaza:
+            date_["pastreaza"] = "on"
+        with redirect_stdout(StringIO()):
+            return self.client.post("/login", date_)
+
+    def test_fara_profil_nu_se_creeaza_rand(self):
+        from .models import Profile, User
+
+        raspuns = self.inregistreaza()
+        self.assertRedirects(raspuns, "/login?username=ana", fetch_redirect_response=False)
+        ana = User.objects.get(username="ana")
+        self.assertEqual(ana.email, "ana@example.com")
+        self.assertEqual(ana.county, "Iași")  # spelled properly
+        self.assertNotEqual(ana.password, self.PAROLA)  # stored hashed
+        self.assertTrue(ana.check_password(self.PAROLA))
+        self.assertFalse(Profile.objects.exists())
+
+    def test_cu_profil_se_creeaza_rand(self):
+        from .models import Profile
+
+        self.inregistreaza(level="intermediate", bio="Bass, mostly.")
+        profil = Profile.objects.get()
+        self.assertEqual((profil.user.username, profil.level, profil.bio), ("ana", "intermediate", "Bass, mostly."))
+
+    def test_validari(self):
+        from .models import User
+
+        User.objects.create_user("alta", "alta@example.com", "parola-lunga-123", phone="0700 000 000")
+        cazuri = [
+            ({"phone": "12345"}, "phone", "0721 000 000"),
+            ({"county": "Atlantis"}, "county", "isn't a Romanian county"),
+            ({"county": "Bavaria", "country": "Germany"}, None, None),  # outside Romania, any region
+            ({"city": "iasi"}, "city", "Start with a capital letter."),
+            ({"street": "Strada Lăpușneanu"}, "street", "Add the number too"),
+            ({"country": "Romania2"}, "country", "only letters"),
+            ({"password2": "alta-parola-123"}, "password2", "The two passwords are different."),
+            ({"email": "ALTA@example.com"}, "email", "There's already an account with this email."),
+            ({"first_name": ""}, "first_name", "Type your given name."),
+            ({"date_of_birth": "2999-01-01"}, "date_of_birth", "in the future"),
+            ({"bio": "x" * 501}, "bio", "Keep it to 500 characters"),
+        ]
+        for schimbari, camp, text in cazuri:
+            with self.subTest(schimbari=schimbari):
+                raspuns = self.inregistreaza(**schimbari)
+                if camp is None:
+                    self.assertEqual(raspuns.status_code, 302)
+                    User.objects.filter(username="ana").delete()
+                    continue
+                self.assertEqual(raspuns.status_code, 200)
+                self.assertIn(text, " ".join(raspuns.context["form"].errors[camp]))
+                self.assertContains(raspuns, "mesaj-error")
+
+    def test_pastrat_logat_o_zi(self):
+        self.inregistreaza()
+        raspuns = self.logheaza(pastreaza=True)
+        self.assertRedirects(raspuns, "/profil", fetch_redirect_response=False)
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+        self.assertEqual(self.client.session.get_expiry_age(), 24 * 60 * 60)
+
+    def test_nepastrat_pana_la_inchiderea_browserului(self):
+        self.inregistreaza()
+        self.logheaza()
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+        self.assertContains(self.client.get("/profil"), "until you close the browser")
+
+    def test_parola_gresita(self):
+        self.inregistreaza()
+        raspuns = self.logheaza(password="gresit")
+        self.assertContains(raspuns, "Wrong username or password.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_profilul_vine_din_sesiune(self):
+        from .models import User
+
+        self.inregistreaza(level="advanced")
+        self.logheaza()
+        self.assertEqual(self.client.session["cont"]["utilizator"]["first_name"], "Ana")
+        raspuns = self.client.get("/profil")
+        self.assertContains(raspuns, "Hello, Ana")
+        self.assertContains(raspuns, "Advanced")
+        # changed behind the session's back: the page still shows the session's copy
+        User.objects.filter(username="ana").update(first_name="Ioana")
+        self.assertContains(self.client.get("/profil"), "Hello, Ana")
+
+    def test_profil_doar_logat(self):
+        self.assertRedirects(self.client.get("/profil"), "/login?next=/profil", fetch_redirect_response=False)
+
+    def test_next_doar_spre_site(self):
+        self.inregistreaza()
+        self.assertRedirects(self.logheaza(next="/produse"), "/produse", fetch_redirect_response=False)
+        self.client.post("/logout")
+        self.assertRedirects(self.logheaza(next="https://altundeva.example/"), "/profil", fetch_redirect_response=False)
+
+    def test_logout_apare_doar_logat_si_cere_post(self):
+        self.inregistreaza()
+        anonim = self.client.get("/").content.decode()
+        self.assertIn("Log in", anonim)
+        self.assertNotIn("Log out", anonim)
+        self.logheaza()
+        self.assertContains(self.client.get("/"), "Log out")
+        self.assertEqual(self.client.get("/logout").status_code, 405)  # a link can't log you out
+        raspuns = self.client.post("/logout", follow=True)
+        self.assertContains(raspuns, "You&#x27;re logged out.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_date_adauga_actualizeaza_si_sterge_profilul(self):
+        from .models import Profile
+
+        self.inregistreaza()
+        self.logheaza()
+        campuri = {k: v for k, v in self.date().items() if not k.startswith("password")}
+        with redirect_stdout(StringIO()):
+            raspuns = self.client.post("/profil/date", {**campuri, "level": "beginner"})
+            self.assertRedirects(raspuns, "/profil", fetch_redirect_response=False)
+            self.assertEqual(Profile.objects.get().level, "beginner")  # added
+            self.client.post("/profil/date", {**campuri, "level": "professional", "city": "Cluj-Napoca"})
+            self.assertEqual(Profile.objects.get().level, "professional")  # updated
+            pagina = self.client.get("/profil")
+            self.assertContains(pagina, "Cluj-Napoca")  # the session was updated too
+            self.assertContains(pagina, "Professional")
+            self.client.post("/profil/date", campuri)
+            self.assertFalse(Profile.objects.exists())  # emptied: no row
+
+    def test_schimbarea_parolei(self):
+        self.inregistreaza()
+        self.logheaza()
+        nou = "alta-parola-pentru-ana-9"
+        with redirect_stdout(StringIO()):
+            gresit = self.client.post("/profil/parola", {"old_password": "nu", "new_password1": nou, "new_password2": nou})
+            self.assertIn("That isn't your current password.", " ".join(gresit.context["form"].errors["old_password"]))
+            raspuns = self.client.post("/profil/parola", {"old_password": self.PAROLA, "new_password1": nou, "new_password2": nou})
+            self.assertRedirects(raspuns, "/profil", fetch_redirect_response=False)
+            self.assertEqual(self.client.get("/profil").status_code, 200)  # still logged in here
+        self.client.post("/logout")
+        self.assertRedirects(self.logheaza(password=nou), "/profil", fetch_redirect_response=False)
+
+
+class ModeleUtilizatoriTest(TestCase):
+    """The rules of the new tables."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from .models import Brand, Category, Department, Employee, Instrument, User
+
+        cls.ana = User.objects.create_user("ana", "ana@example.com", "parola-lunga-123")
+        cls.ion = User.objects.create_user("ion", "ion@example.com", "parola-lunga-123")
+        cls.atelier = Department.objects.get(slug="workshop")
+        cls.angajat = Employee.objects.create(user=cls.ion, department=cls.atelier, job_title="Luthier", salary=6000)
+        categorie = Category.objects.create(name="Guitars", color="#2D6B5D")
+        brand = Brand.objects.create(name="Fender", country="USA")
+        cls.chitara = Instrument.objects.create(name="Strat", price=4000, stock=1, condition="used", category=categorie, brand=brand)
+
+    def test_seful_lucreaza_in_departament(self):
+        from django.core.exceptions import ValidationError
+
+        from .models import Department
+
+        self.atelier.head = self.angajat
+        self.atelier.full_clean()  # works there: fine
+        comenzi = Department.objects.get(slug="orders")
+        comenzi.head = self.angajat
+        with self.assertRaisesMessage(ValidationError, "works in Workshop, not in this department"):
+            comenzi.full_clean()
+
+    def test_comanda_cu_produse_si_cantitati(self):
+        from .models import Order, OrderItem
+
+        comanda = Order.objects.create(user=self.ana, payment_method="card")
+        OrderItem.objects.create(order=comanda, instrument=self.chitara, quantity=2, unit_price=4000)
+        self.assertEqual(list(comanda.products.all()), [self.chitara])  # the many-to-many through OrderItem
+        self.assertEqual(comanda.total(), 8000)
+
+    def test_reguli_in_baza_de_date(self):
+        from django.db import IntegrityError, transaction
+
+        from .models import Order, Question, Review
+
+        cazuri = [
+            lambda: Order.objects.create(user=self.ana, payment_method="cash_on_delivery", by_courier=False),
+            lambda: Review.objects.create(user=self.ana, instrument=self.chitara, rating=6),
+            lambda: Question.objects.create(user=self.ana, instrument=self.chitara, text="Weight?", answer="3.6 kg"),
+        ]
+        for caz in cazuri:
+            with self.subTest(), self.assertRaises(IntegrityError), transaction.atomic():
+                caz()

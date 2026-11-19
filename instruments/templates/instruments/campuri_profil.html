@@ -1,0 +1,11 @@
+{# The optional profile, shared by the sign-up page and the "Your details" page. #}
+<fieldset>
+  <legend>Your profile</legend>
+  <p class="ajutor-grup">Optional, all of it. It helps us suggest instruments that suit you.</p>
+  <div class="rand-doua">
+    {% include "instruments/camp.html" with camp=form.level %}
+    {% include "instruments/camp.html" with camp=form.favorite_category %}
+  </div>
+  {% include "instruments/camp.html" with camp=form.date_of_birth %}
+  {% include "instruments/camp.html" with camp=form.bio %}
+</fieldset>

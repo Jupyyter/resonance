@@ -25,6 +25,11 @@ SECTIUNI_MENIU = {
     "info": "site",
     "log": "site",
     "accesare": "site",
+    "login": "cont",
+    "inregistrare": "inregistrare",
+    "profil": "cont",
+    "date_cont": "cont",
+    "parola": "cont",
 }
 
 

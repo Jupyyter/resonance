@@ -1,3 +1,6 @@
 # Files read inside the Linux container keep Linux line endings, even when checked out on Windows.
 *.sql text eol=lf
 *.yaml text eol=lf
+
+# Windows batch files keep Windows line endings, which cmd.exe expects.
+*.bat text eol=crlf

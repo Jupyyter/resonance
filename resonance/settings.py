@@ -168,3 +168,16 @@ MAILERS = {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+
+# ---------- Accounts (lab 6) ----------
+# The site's own user model (instruments.User) instead of Django's. It has to be set before the
+# first migration: Django's tables for permissions and the admin's log point to it.
+AUTH_USER_MODEL = "instruments.User"
+
+# Where @login_required sends visitors who aren't logged in, and where logging in leads
+LOGIN_URL = "instruments:login"
+LOGIN_REDIRECT_URL = "instruments:profil"
+
+# "Keep me logged in": a day, in seconds
+SESIUNE_PASTRATA = 24 * 60 * 60

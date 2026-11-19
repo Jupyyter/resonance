@@ -1429,7 +1429,9 @@ details.ajutor dd {
   gap: 0.8rem;
 }
 .formular-butoane button,
+.formular-butoane a.buton-secundar,
 .dialog-butoane button {
+  display: inline-block;
   font: inherit;
   font-weight: 700;
   padding: 0.7rem 1.4rem;
@@ -1448,6 +1450,9 @@ details.ajutor dd {
 .dialog-butoane .buton-secundar {
   background: transparent;
   color: var(--palisandru);
+}
+.formular-butoane a.buton-secundar {
+  text-decoration: none;
 }
 .formular-butoane .buton-secundar:hover,
 .dialog-butoane .buton-secundar:hover {
@@ -1673,4 +1678,103 @@ details.ajutor dd {
     margin-left: 0;
     flex-basis: 100%;
   }
+}
+
+/* =====================================================================================
+   Lab 6: accounts
+   ===================================================================================== */
+
+/* login and password: a few fields, so a narrow column */
+.pagina-ingusta {
+  max-width: 30rem;
+}
+.pagina-ingusta .formular {
+  display: grid;
+  gap: 1.1rem;
+}
+.formular-alternativa {
+  margin: 0;
+  color: var(--cerneala-slaba);
+}
+.ajutor-grup {
+  margin: 0;
+  color: var(--cerneala-slaba);
+}
+
+/* ---------- the profile page ---------- */
+.profil {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+/* each part is a sheet with a rosewood top edge, like the forms' groups */
+.fisa {
+  background: var(--sidef);
+  border: 1px solid var(--linie);
+  border-top: 4px solid var(--palisandru);
+  border-radius: 4px 4px 8px 8px;
+  padding: 1.25rem 1.5rem 1.4rem;
+}
+.fisa h2 {
+  font-size: var(--pas-2);
+  margin: 0 0 0.75rem;
+}
+.fisa dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  margin: 0;
+}
+.fisa dt,
+.fisa dd {
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--linie);
+}
+.fisa dt {
+  padding-right: 1.5rem;
+  color: var(--cerneala-slaba);
+}
+.fisa dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.fisa dt:first-of-type,
+.fisa dd:first-of-type {
+  border-top: 0;
+}
+.fisa-goala {
+  margin: 0 0 0.75rem;
+  color: var(--cerneala-slaba);
+}
+.fisa-goala + p {
+  margin: 0;
+  font-weight: 700;
+}
+.actiuni-profil {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+}
+.actiuni-profil a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1.2rem;
+  border: 1px solid var(--palisandru);
+  border-radius: 999px;
+  color: var(--palisandru);
+  font-weight: 700;
+  text-decoration: none;
+}
+.actiuni-profil a:hover {
+  background: var(--palisandru);
+  color: var(--sidef);
+}
+.nota-sesiune {
+  margin: 1.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--cerneala-slaba);
 }

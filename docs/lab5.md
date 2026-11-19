@@ -122,7 +122,7 @@ Messages survive redirects: the framework stores them until a page shows them. T
 | Send it to | a department from the `Department` table, and one that handles this kind of message (the link table); "Not selected" is refused |
 | Subject | required; starts with a capital, only letters, spaces and hyphens; no links and no `a.b.c` addresses |
 | Days you can wait | 1 to 30, and at least the kind's minimum (the label lists them, built from the table) |
-| Message | 5 to 100 words, each at most 15 characters; no links; must end with the family name (the signature) |
+| Message | 5 to 100 words, each at most 15 characters; no links |
 | Images | up to 3, optional, must be real images |
 | Consent | required; the Send button stays disabled until it's ticked, and the server checks again |
 | Request code (hidden) | made by the server when the page opens, signed with `SECRET_KEY` and the time. An invented or 3-hour-old code is refused |

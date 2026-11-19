@@ -1,6 +1,6 @@
 from django.urls import path, re_path
 
-from . import views
+from . import views, views_conturi
 
 # The app's own addresses. app_name lets templates and code write "instruments:info"
 # instead of "/info", so an address can change without breaking the links to it.
@@ -22,6 +22,13 @@ urlpatterns = [
     path("categorii/<str:nume>", views.categorie, name="categorie"),
     path("contact", views.contact, name="contact"),
     # the saved contact messages: a department, then a year, a month or a day
+    # Lab 6: accounts
+    path("inregistrare", views_conturi.inregistrare, name="inregistrare"),
+    path("login", views_conturi.autentificare, name="login"),
+    path("logout", views_conturi.iesire, name="logout"),
+    path("profil", views_conturi.profil, name="profil"),
+    path("profil/date", views_conturi.date_cont, name="date_cont"),
+    path("profil/parola", views_conturi.parola, name="parola"),
     path("mesaje", views.mesaje_index, name="mesaje"),
     path("mesaje/<slug:departament>/<int:an>", views.mesaje, name="mesaje_departament"),
     path("mesaje/<slug:departament>/<int:an>/<int:luna>", views.mesaje, name="mesaje_departament"),

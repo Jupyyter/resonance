@@ -1,0 +1,21 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Change your password | Resonance{% endblock %}
+
+{% block continut %}
+<div class="pagina-ingusta">
+  <nav class="firimituri" aria-label="You are here"><a href="{% url 'instruments:profil' %}">Your profile</a></nav>
+  <h1>Change your password</h1>
+  <form class="formular" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% include "instruments/camp.html" with camp=form.old_password %}
+    {% include "instruments/camp.html" with camp=form.new_password1 %}
+    {% include "instruments/camp.html" with camp=form.new_password2 %}
+    <div class="formular-butoane">
+      <button type="submit">Change my password</button>
+      <a class="buton-secundar" href="{% url 'instruments:profil' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

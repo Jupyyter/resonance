@@ -58,5 +58,32 @@
     <li class="meniu-cos">
       <a href="{% url 'instruments:cos_virtual' %}"{% if sectiune_activa == "cos" %} class="activ" aria-current="true"{% endif %}>Cart</a>
     </li>
+    {# Lab 6: the account. user comes from the "auth" context processor: the logged-in user, or an anonymous one. #}
+    {% if user.is_authenticated %}
+      <li class="are-submeniu meniu-cont">
+        <a href="{% url 'instruments:profil' %}"{% if sectiune_activa == "cont" %} class="activ" aria-current="true"{% endif %}>
+          <i class="fa-solid fa-circle-user" aria-hidden="true"></i>{{ user.first_name|default:user.username }}
+        </a>
+        <ul class="submeniu">
+          <li><a href="{% url 'instruments:profil' %}">Your profile</a></li>
+          <li><a href="{% url 'instruments:date_cont' %}">Change your details</a></li>
+          <li><a href="{% url 'instruments:parola' %}">Change your password</a></li>
+          <li>
+            {# Logging out changes something, so it's a form sent with POST, with its CSRF token. #}
+            <form method="post" action="{% url 'instruments:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="buton-iesire">Log out</button>
+            </form>
+          </li>
+        </ul>
+      </li>
+    {% else %}
+      <li class="meniu-cont">
+        <a href="{% url 'instruments:login' %}"{% if sectiune_activa == "cont" %} class="activ" aria-current="true"{% endif %}>Log in</a>
+      </li>
+      <li>
+        <a href="{% url 'instruments:inregistrare' %}" class="link-inregistrare{% if sectiune_activa == "inregistrare" %} activ" aria-current="true{% endif %}">Sign up</a>
+      </li>
+    {% endif %}
   </ul>
 </nav>

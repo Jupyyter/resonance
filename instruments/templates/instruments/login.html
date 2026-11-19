@@ -1,0 +1,22 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Log in | Resonance{% endblock %}
+
+{% block continut %}
+<div class="pagina-ingusta">
+  <h1>Log in</h1>
+  <form class="formular" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {# where to go afterwards, when a page that needs an account sent the visitor here #}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "instruments/camp.html" with camp=form.username %}
+    {% include "instruments/camp.html" with camp=form.password %}
+    {% include "instruments/camp.html" with camp=form.pastreaza %}
+    <div class="formular-butoane">
+      <button type="submit">Log in</button>
+      <p class="formular-alternativa">No account yet? <a href="{% url 'instruments:inregistrare' %}">Sign up</a></p>
+    </div>
+  </form>
+</div>
+{% endblock %}

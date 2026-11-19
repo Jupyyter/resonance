@@ -11,7 +11,9 @@ Rules are checked in two places:
   go through Django can't break them.
 """
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import Q
@@ -19,6 +21,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .icoane import ALEGERI as ICOANE_CATEGORII
+from .validatori import (
+    e_romania,
+    judet_roman,
+    majuscula_si_litere,
+    strada_cu_numar,
+    telefon_valid,
+)
 
 HEX_COLOR = r"^#[0-9A-Fa-f]{6}$"
 
@@ -364,6 +373,15 @@ class Department(models.Model):
         unique=True,
         help_text="Lowercase letters, digits and hyphens. Names the department's message folder and its address in /mesaje.",
     )
+    # Lab 6: who leads it. "Employee" in quotes, because that class comes further down the file.
+    head = models.ForeignKey(
+        "Employee",
+        on_delete=models.SET_NULL,  # if the head leaves, the department stays, without a head
+        null=True,
+        blank=True,
+        related_name="departments_led",
+        help_text="Someone who works in this department. Can stay empty.",
+    )
 
     class Meta:
         verbose_name = "department"
@@ -372,6 +390,11 @@ class Department(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        # The head must be one of the department's own employees.
+        if self.head_id and self.head.department_id != self.pk:
+            raise ValidationError({"head": f"{self.head} works in {self.head.department}, not in this department."})
 
 
 class MessageType(models.Model):
@@ -404,3 +427,301 @@ class MessageType(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# =====================================================================================
+# Lab 6: users, their orders and what they write about instruments
+# =====================================================================================
+
+
+class User(AbstractUser):
+    """The site's account. settings.AUTH_USER_MODEL points Django to it instead of its own User.
+
+    AbstractUser already has id, username, first_name, last_name, email, password (stored as a
+    salted hash, never as typed), is_staff, is_superuser, is_active, last_login and date_joined.
+    Added here: the delivery details, which every account has. The optional details live in
+    Profile, and only for the users who fill them in.
+    """
+
+    # AbstractUser's email may be empty and repeated; an account here needs its own.
+    email = models.EmailField(
+        "email",
+        unique=True,
+        error_messages={"unique": "There's already an account with this email."},
+    )
+    phone = models.CharField(max_length=20, validators=[telefon_valid])
+    country = models.CharField(max_length=60, default="Romania", validators=[majuscula_si_litere])
+    county = models.CharField(
+        max_length=60,
+        validators=[majuscula_si_litere],
+        help_text="For Romania, the county, or București. Elsewhere, the region or state.",
+    )
+    city = models.CharField(max_length=60, validators=[majuscula_si_litere])
+    street = models.CharField(
+        max_length=120,
+        validators=[strada_cu_numar],
+        help_text="Street and number, then the building and apartment if there are any.",
+    )
+
+    class Meta:
+        verbose_name = "user"
+        verbose_name_plural = "users"
+        ordering = ["username"]
+
+    def clean(self):
+        super().clean()
+        # Django lowercases only the part after @; the whole address, so Ana@ and ana@ are one account
+        self.email = self.email.lower()
+        # In Romania, the county must be a real one, and is stored spelled properly.
+        if self.county and e_romania(self.country):
+            try:
+                self.county = judet_roman(self.county)
+            except ValidationError as eroare:
+                raise ValidationError({"county": eroare})
+
+    def adresa(self):
+        return ", ".join(p for p in (self.street, self.city, self.county, self.country) if p)
+
+
+class Profile(models.Model):
+    """The optional details of an account. A user has a row here only if they filled in at least
+    one of these, so the table has no rows full of empty values.
+
+    primary_key=True on the one-to-one: the profile's id is its user's id, so a user can't have two.
+    """
+
+    class Level(models.TextChoices):
+        BEGINNER = "beginner", "Beginner"
+        INTERMEDIATE = "intermediate", "Intermediate"
+        ADVANCED = "advanced", "Advanced"
+        PROFESSIONAL = "professional", "Professional"
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, related_name="profile")
+    date_of_birth = models.DateField(null=True, blank=True)
+    level = models.CharField(
+        max_length=12,
+        choices=Level.choices,
+        blank=True,
+        help_text="How well the user plays, so the shop can suggest instruments that fit.",
+    )
+    favorite_category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,  # deleting a category doesn't delete profiles
+        null=True,
+        blank=True,
+        related_name="fans",
+    )
+    bio = models.TextField("about", max_length=500, blank=True)
+
+    class Meta:
+        verbose_name = "profile"
+        verbose_name_plural = "profiles"
+
+    def __str__(self):
+        return f"Profile of {self.user}"
+
+
+class Employee(models.Model):
+    """A user who works for the shop. Only what being an employee adds: the name, email and the
+    rest are in the user's own row, reached through the one-to-one link."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, related_name="employee"
+    )
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.PROTECT,  # a department with employees can't be deleted
+        related_name="employees",
+    )
+    job_title = models.CharField(max_length=80)
+    hired_on = models.DateField(default=timezone.localdate)
+    salary = models.DecimalField(max_digits=8, decimal_places=2, help_text="Gross, in lei per month.")
+
+    class Meta:
+        verbose_name = "employee"
+        verbose_name_plural = "employees"
+        ordering = ["department", "user__last_name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(salary__gt=0),
+                name="employee_salary_positive",
+                violation_error_message="The salary must be more than 0.",
+            ),
+        ]
+
+    def __str__(self):
+        return self.user.get_full_name() or self.user.username
+
+
+class Order(models.Model):
+    """An order: who placed it, when, how it's delivered and paid, and where it is now.
+
+    products is a many-to-many relationship through OrderItem: an order has several instruments,
+    an instrument is in several orders, and each pair also has a quantity and a price.
+    """
+
+    class Status(models.TextChoices):
+        PLACED = "placed", "Placed"
+        PAID = "paid", "Paid"
+        SHIPPED = "shipped", "Shipped"
+        DELIVERED = "delivered", "Delivered"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Payment(models.TextChoices):
+        CARD = "card", "Card"
+        CASH_ON_DELIVERY = "cash_on_delivery", "Cash on delivery"
+        BANK_TRANSFER = "bank_transfer", "Bank transfer"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,  # orders are kept for the accounts: a user with orders can't be deleted
+        related_name="orders",
+    )
+    placed_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PLACED)
+    by_courier = models.BooleanField(default=True, help_text="Unticked: collected from the shop.")
+    payment_method = models.CharField(max_length=16, choices=Payment.choices, default=Payment.CARD)
+    products = models.ManyToManyField(Instrument, through="OrderItem", related_name="orders")
+
+    class Meta:
+        verbose_name = "order"
+        verbose_name_plural = "orders"
+        ordering = ["-placed_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=["placed", "paid", "shipped", "delivered", "cancelled"]),
+                name="order_status_valid",
+                violation_error_message="The status is placed, paid, shipped, delivered or cancelled.",
+            ),
+            models.CheckConstraint(
+                # the courier collects the money, so cash on delivery needs a courier
+                condition=~Q(payment_method="cash_on_delivery") | Q(by_courier=True),
+                name="order_cash_needs_courier",
+                violation_error_message="Cash on delivery only works with a courier.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Order {self.pk} by {self.user}"
+
+    def total(self):
+        return sum((i.unit_price * i.quantity for i in self.items.all()), 0)
+
+
+class OrderItem(models.Model):
+    """One instrument in one order: the link table of the many-to-many, with its own columns."""
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, related_name="order_items")
+    quantity = models.PositiveSmallIntegerField(default=1)
+    unit_price = models.DecimalField(
+        max_digits=9,
+        decimal_places=2,
+        help_text="The price when the order was placed. Later price changes don't touch it.",
+    )
+
+    class Meta:
+        verbose_name = "order item"
+        verbose_name_plural = "order items"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order", "instrument"],
+                name="orderitem_once_per_order",
+                violation_error_message="This instrument is already in the order: change its quantity instead.",
+            ),
+            models.CheckConstraint(
+                condition=Q(quantity__gte=1), name="orderitem_quantity_positive",
+                violation_error_message="The quantity is at least 1.",
+            ),
+            models.CheckConstraint(
+                condition=Q(unit_price__gt=0), name="orderitem_price_positive",
+                violation_error_message="The price must be more than 0.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.quantity} × {self.instrument}"
+
+
+class Review(models.Model):
+    """A user's stars and words about an instrument. One per user and instrument."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviews")
+    instrument = models.ForeignKey(Instrument, on_delete=models.CASCADE, related_name="reviews")
+    rating = models.PositiveSmallIntegerField(help_text="From 1 to 5 stars.")
+    text = models.TextField(max_length=2000, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name = "review"
+        verbose_name_plural = "reviews"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "instrument"],
+                name="review_once_per_instrument",
+                violation_error_message="This user has already reviewed this instrument.",
+            ),
+            models.CheckConstraint(
+                condition=Q(rating__gte=1) & Q(rating__lte=5),
+                name="review_rating_1_to_5",
+                violation_error_message="The rating is from 1 to 5 stars.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.rating}★ for {self.instrument} by {self.user}"
+
+
+class Favorite(models.Model):
+    """An instrument on a user's wish list."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites")
+    instrument = models.ForeignKey(Instrument, on_delete=models.CASCADE, related_name="favorited_by")
+    added_at = models.DateTimeField(default=timezone.now)
+    price_alert = models.BooleanField(default=False, help_text="Email the user when the price drops.")
+
+    class Meta:
+        verbose_name = "favorite"
+        verbose_name_plural = "favorites"
+        ordering = ["-added_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "instrument"],
+                name="favorite_once_per_instrument",
+                violation_error_message="This instrument is already on the list.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.instrument} on {self.user}'s list"
+
+
+class Question(models.Model):
+    """A user's question about an instrument, and an employee's answer once there is one."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="questions")
+    instrument = models.ForeignKey(Instrument, on_delete=models.CASCADE, related_name="questions")
+    text = models.TextField(max_length=1000)
+    asked_at = models.DateTimeField(default=timezone.now)
+    answer = models.TextField(max_length=2000, blank=True)
+    answered_by = models.ForeignKey(
+        Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name="answers"
+    )
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "question"
+        verbose_name_plural = "questions"
+        ordering = ["-asked_at"]
+        constraints = [
+            models.CheckConstraint(
+                # an answer has a date, and a date has an answer
+                condition=(Q(answer="") & Q(answered_at__isnull=True)) | (~Q(answer="") & Q(answered_at__isnull=False)),
+                name="question_answer_has_date",
+                violation_error_message="An answer needs the date it was given, and a date needs an answer.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user} about {self.instrument}"

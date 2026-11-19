@@ -12,20 +12,24 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django import forms
 from django.conf import settings
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
 from django.core import signing
-from django.core.validators import RegexValidator
 
-from .models import Brand, Category, Department, Distributor, Instrument, MessageType, Service
+from .models import Brand, Category, Department, Distributor, Instrument, MessageType, Profile, Service, User
 from .validatori import (
     cnp_valid,
     cuvinte,
     data_din_cnp,
+    data_nasterii_plauzibila,
+    e_romania,
     fara_email_temporar,
     fara_linkuri,
     fara_strigat,
+    judet_roman,
     major,
     majuscula_dupa_separator,
     majuscula_si_litere,
+    telefon_valid,
 )
 
 # =====================================================================================
@@ -339,9 +343,7 @@ class ContactForm(forms.Form):
         required=False,
         max_length=20,
         help_text="Optional. Romanian numbers as 0721 000 000; others with the country code: +44 20 0000 0000.",
-        validators=[
-            RegexValidator(r"^(\+[1-9][0-9 ]{7,17}|0[0-9 ]{9,12})$", "Write the number as 0721 000 000, or with + and the country code."),
-        ],
+        validators=[telefon_valid],
         error_messages={"max_length": "A phone number fits in 20 characters."},
     )
     tip_mesaj = forms.ChoiceField(
@@ -371,7 +373,7 @@ class ContactForm(forms.Form):
         },
     )
     mesaj = forms.CharField(
-        label="Your message. Sign it: end it with your family name.",
+        label="Your message",
         widget=forms.Textarea(attrs={"rows": 7}),
         validators=[fara_linkuri],
         error_messages={"required": "Write your message."},
@@ -463,12 +465,6 @@ class ContactForm(forms.Form):
         email, confirmare = date_.get("email"), date_.get("confirmare_email")
         if email and confirmare and email != confirmare:
             self.add_error("confirmare_email", "The two email addresses are different.")
-
-        nume, mesaj = date_.get("nume"), date_.get("mesaj")
-        if nume and mesaj:
-            semnatura = cuvinte(nume)
-            if [c.casefold() for c in cuvinte(mesaj)[-len(semnatura):]] != [c.casefold() for c in semnatura]:
-                self.add_error("mesaj", f"Sign your message: end it with your family name, {nume}.")
 
         tip, zile = date_.get("tip_mesaj"), date_.get("minim_zile_asteptare")
         if tip and zile is not None and zile < tip.min_days:
@@ -584,3 +580,220 @@ class InstrumentForm(forms.ModelForm):
         """The selling price, from the two extra inputs."""
         date_ = self.cleaned_data
         return la_9(date_["pret_achizitie"] * (1 + Decimal(date_["adaos"]) / 100))
+
+
+
+# =====================================================================================
+# Lab 6: accounts
+# =====================================================================================
+
+# Django's help text for a new password is a list in HTML; the field template wants a sentence.
+# It says what settings.AUTH_PASSWORD_VALIDATORS check.
+AJUTOR_PAROLA = "At least 8 characters, not only digits, not a common password, and not too close to your username or email."
+
+# The user's own columns, in the order the forms show them
+CAMPURI_UTILIZATOR = ["username", "first_name", "last_name", "email", "phone", "country", "county", "city", "street"]
+CAMPURI_PROFIL = ["date_of_birth", "level", "favorite_category", "bio"]
+
+ETICHETE_UTILIZATOR = {
+    "username": "Username",
+    "first_name": "Given name",
+    "last_name": "Family name",
+    "email": "Email",
+    "phone": "Phone",
+    "country": "Country",
+    "county": "County",
+    "city": "Town or city",
+    "street": "Street address",
+}
+MESAJE_UTILIZATOR = {
+    "username": {
+        "required": "Choose a username.",
+        "unique": "That username is taken. Try another.",
+        "max_length": "A username fits in 150 characters.",
+    },
+    "first_name": {"required": "Type your given name."},
+    "last_name": {"required": "Type your family name."},
+    "email": {
+        "required": "Type your email: we send order updates there.",
+        "invalid": "This doesn't look like an email address.",
+        "unique": "There's already an account with this email. Log in instead?",
+    },
+    "phone": {"required": "Type a phone number, for the courier."},
+    "country": {"required": "Type the country."},
+    "county": {"required": "Type the county."},
+    "city": {"required": "Type the town or city."},
+    "street": {"required": "Type the street and number."},
+}
+
+
+class ParteComunaCont(forms.Form):
+    """What the sign-up form and the "Your details" form share: the optional details that go to
+    the Profile table (they aren't columns of User, so they're declared here by hand), saving
+    them, and the check of the county."""
+
+    date_of_birth = forms.DateField(
+        label="Date of birth",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        validators=[data_nasterii_plauzibila],
+        error_messages={"invalid": "Choose the date from the calendar, or type it as YYYY-MM-DD."},
+    )
+    level = forms.ChoiceField(
+        label="How well do you play?",
+        required=False,
+        choices=[("", "Rather not say"), *Profile.Level.choices],
+        error_messages={"invalid_choice": "Pick a level from the list."},
+    )
+    favorite_category = forms.ModelChoiceField(
+        label="The instruments you like most",
+        required=False,
+        queryset=Category.objects.all(),
+        empty_label="None in particular",
+        error_messages={"invalid_choice": "Pick a category from the list."},
+    )
+    bio = forms.CharField(
+        label="About you",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="What you play, what you're looking for. 500 characters at most.",
+        error_messages={"max_length": "Keep it to 500 characters; this has %(show_value)d."},
+    )
+
+    def date_profil(self):
+        """The profile's values from the form; {} when the user left every one of them empty."""
+        date_ = {camp: self.cleaned_data.get(camp) for camp in CAMPURI_PROFIL}
+        return date_ if any(v not in (None, "") for v in date_.values()) else {}
+
+    def salveaza_profil(self, utilizator):
+        """Creates, updates or deletes the user's Profile row, so that it exists exactly when at
+        least one of its details is filled in."""
+        date_ = self.date_profil()
+        if date_:
+            Profile.objects.update_or_create(user=utilizator, defaults=date_)
+        else:
+            Profile.objects.filter(user=utilizator).delete()
+
+    def clean_email(self):
+        # Django lowercases only the part after @; the whole address, so Ana@ and ana@ are one account
+        return self.cleaned_data["email"].lower()
+
+    def clean_county(self):
+        """In Romania, the county must be a real one, written properly ("iasi" becomes "Iași").
+        The model checks this too (User.clean), for the admin; here the error lands on the field."""
+        judet = self.cleaned_data["county"]
+        tara = self.data.get(self.add_prefix("country"), "")
+        if e_romania(tara):
+            return judet_roman(judet)
+        return judet
+
+
+def _pregateste(form):
+    """What both account forms do to the user's fields: labels, messages, no ":" after labels,
+    and names and email required (Django's User leaves them optional)."""
+    form.label_suffix = ""
+    for nume, camp in form.fields.items():
+        if nume in ETICHETE_UTILIZATOR:
+            camp.label = ETICHETE_UTILIZATOR[nume]
+        camp.error_messages.update(MESAJE_UTILIZATOR.get(nume, {}))
+    for nume in ("first_name", "last_name", "email"):
+        form.fields[nume].required = True
+    form.fields["username"].help_text = "Letters, digits and @ . + - _ only. You log in with it."
+    form.fields["phone"].help_text = "For the courier: 0721 000 000, or + and the country code."
+    form.fields["phone"].widget.attrs.update({"type": "tel", "autocomplete": "tel"})
+    form.fields["email"].widget.attrs["autocomplete"] = "email"
+    form.fields["street"].widget.attrs["autocomplete"] = "street-address"
+
+
+class InregistrareForm(ParteComunaCont, UserCreationForm):
+    """Sign up: the user's columns (Django's username, names, email and password, plus ours),
+    then the optional profile. UserCreationForm checks that the two passwords match and that the
+    password is strong enough (settings.AUTH_PASSWORD_VALIDATORS), and stores it hashed."""
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = CAMPURI_UTILIZATOR
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _pregateste(self)
+        self.fields["password1"].label = "Password"
+        self.fields["password1"].help_text = AJUTOR_PAROLA
+        self.fields["password2"].label = "Password again"
+        self.fields["password2"].help_text = "The same password, to be sure there's no typo."
+        self.fields["password1"].error_messages["required"] = "Choose a password."
+        self.fields["password2"].error_messages["required"] = "Type the password again."
+        self.error_messages["password_mismatch"] = "The two passwords are different."
+
+    def save(self, commit=True):
+        utilizator = super().save(commit=commit)
+        if commit:
+            # no profile details at all: no row in the Profile table
+            self.salveaza_profil(utilizator)
+        return utilizator
+
+
+class DateContForm(ParteComunaCont, forms.ModelForm):
+    """"Your details": everything but the password, the profile included."""
+
+    class Meta:
+        model = User
+        fields = CAMPURI_UTILIZATOR
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _pregateste(self)
+        profil = getattr(self.instance, "profile", None) if self.instance.pk else None
+        if profil and not self.is_bound:
+            for camp in CAMPURI_PROFIL:
+                self.initial[camp] = getattr(profil, camp)
+
+    def save(self, commit=True):
+        utilizator = super().save(commit=commit)
+        if commit:
+            self.salveaza_profil(utilizator)
+        return utilizator
+
+
+class LoginForm(AuthenticationForm):
+    """Django's login form, which checks the username and password, plus "keep me logged in"."""
+
+    pastreaza = forms.BooleanField(
+        label="Keep me logged in for a day",
+        required=False,
+        help_text="Unticked, you're logged out when you close the browser.",
+    )
+
+    error_messages = {
+        "invalid_login": "Wrong username or password. Both are case-sensitive.",
+        "inactive": "This account is switched off. Write to us through the contact page.",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label_suffix = ""
+        self.fields["username"].label = "Username"
+        self.fields["password"].label = "Password"
+        self.fields["username"].error_messages["required"] = "Type your username."
+        self.fields["password"].error_messages["required"] = "Type your password."
+
+
+class ParolaForm(PasswordChangeForm):
+    """Django's password change form: the old password, then the new one twice."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label_suffix = ""
+        self.fields["old_password"].label = "Current password"
+        self.fields["new_password1"].label = "New password"
+        self.fields["new_password2"].label = "New password again"
+        self.fields["new_password1"].help_text = AJUTOR_PAROLA
+        self.fields["old_password"].error_messages["required"] = "Type the password you use now."
+        self.fields["new_password1"].error_messages["required"] = "Choose a new password."
+        self.fields["new_password2"].error_messages["required"] = "Type the new password again."
+        self.error_messages = {
+            **self.error_messages,
+            "password_incorrect": "That isn't your current password.",
+            "password_mismatch": "The two new passwords are different.",
+        }

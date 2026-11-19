@@ -1,0 +1,46 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Your profile | Resonance{% endblock %}
+
+{% block continut %}
+{# Everything below comes from the session (cont = request.session["cont"]), saved when you logged in. #}
+{% with u=cont.utilizator p=cont.profil %}
+<h1>Hello, {{ u.first_name|default:u.username }}</h1>
+<p class="introducere">You're logged in as <strong>{{ u.username }}</strong>, until {% if pana_la_inchidere %}you close the browser{% else %}{{ expira|date:"j F, H:i" }}{% endif %}.</p>
+
+<div class="profil">
+  <section class="fisa">
+    <h2>Your account</h2>
+    <dl>
+      <dt>Name</dt><dd>{{ u.first_name }} {{ u.last_name }}</dd>
+      <dt>Email</dt><dd>{{ u.email }}</dd>
+      <dt>Phone</dt><dd>{{ u.phone|default:"—" }}</dd>
+      <dt>Delivery address</dt>
+      <dd>{% if u.street %}{{ u.street }}<br>{{ u.city }}, {{ u.county }}<br>{{ u.country }}{% else %}—{% endif %}</dd>
+      <dt>Member since</dt><dd>{{ u.date_joined }}</dd>
+    </dl>
+  </section>
+
+  <section class="fisa">
+    <h2>Your profile</h2>
+    {% if p %}
+      <dl>
+        <dt>Plays</dt><dd>{{ p.level|default:"—" }}</dd>
+        <dt>Likes most</dt><dd>{{ p.favorite_category|default:"—" }}</dd>
+        <dt>Born</dt><dd>{{ p.date_of_birth|default:"—" }}</dd>
+        {% if p.bio %}<dt>About</dt><dd class="despre-utilizator">{{ p.bio|linebreaksbr }}</dd>{% endif %}
+      </dl>
+    {% else %}
+      <p class="fisa-goala">You haven't filled in your profile. Tell us what you play and we can suggest instruments that suit you.</p>
+      <p><a href="{% url 'instruments:date_cont' %}#profil">Fill in your profile</a></p>
+    {% endif %}
+  </section>
+</div>
+
+<ul class="actiuni-profil">
+  <li><a href="{% url 'instruments:date_cont' %}"><i class="fa-solid fa-pen" aria-hidden="true"></i>Change your details</a></li>
+  <li><a href="{% url 'instruments:parola' %}"><i class="fa-solid fa-key" aria-hidden="true"></i>Change your password</a></li>
+</ul>
+<p class="nota-sesiune">These details were saved in your session at {{ cont.salvat_la }}.</p>
+{% endwith %}
+{% endblock %}

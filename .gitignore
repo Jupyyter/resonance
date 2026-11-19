@@ -5,3 +5,6 @@ db.sqlite3
 .env
 media/
 instruments/Mesaje_nerezolvate/
+
+# Database backups: they hold the accounts (emails, password hashes) and the contact data
+backups/

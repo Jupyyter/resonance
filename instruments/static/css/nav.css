@@ -251,3 +251,62 @@
   margin-right: 0.6rem;
   vertical-align: -0.1em;
 }
+
+/* ---------- The account (lab 6) ---------- */
+/* the last entry of the bar: its submenu opens leftwards, so it stays on the screen */
+.meniu-cont .submeniu {
+  left: auto;
+  right: 0;
+  min-width: 13rem;
+}
+.meniu-cont > a .fa-circle-user {
+  font-size: 1.15em;
+}
+/* Log out sends a form, so it's a button, dressed like the links above it */
+.submeniu form {
+  margin: 0.35rem 0 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgb(251 252 251 / 0.15);
+}
+.buton-iesire {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--sidef);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.buton-iesire:hover,
+.buton-iesire:focus-visible {
+  background: rgb(140 199 182 / 0.14);
+  color: var(--spuma);
+}
+/* Sign up: the one outlined entry, since it's where a new visitor starts */
+.meniu-lista > li:has(> .link-inregistrare) {
+  display: flex;
+  align-items: center;
+}
+.meniu-lista > li > a.link-inregistrare {
+  height: auto;
+  padding: 0.4rem 0.95rem;
+  border: 1px solid rgb(251 252 251 / 0.5);
+  border-radius: 999px;
+}
+.meniu-lista > li > a.link-inregistrare:hover {
+  border-color: var(--spuma);
+}
+@media (max-width: 60rem) {
+  .meniu-lista > li > a.link-inregistrare {
+    padding: 0.7rem 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .buton-iesire {
+    padding: 0.45rem 0.6rem;
+    color: rgb(251 252 251 / 0.85);
+  }
+}
