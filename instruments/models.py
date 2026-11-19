@@ -10,9 +10,12 @@ Rules are checked in two places:
 - by PostgreSQL itself (NOT NULL, UNIQUE and the CHECK constraints), so even data that doesn't
   go through Django can't break them.
 """
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import Q
+from django.urls import reverse
 from django.utils import timezone
 
 HEX_COLOR = r"^#[0-9A-Fa-f]{6}$"
@@ -59,6 +62,14 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self):
+        """The category's own page: /categorii/<name>."""
+        return reverse("instruments:categorie", args=[self.name])
+
+    def icon_class(self):
+        """The Font Awesome classes for the icon: "fa-solid fa-guitar"."""
+        return f"fa-solid fa-{self.icon}"
 
 
 class Brand(models.Model):
@@ -209,6 +220,12 @@ class Instrument(models.Model):
         help_text="Separate them with commas, like: alder, maple, rosewood.",
     )
     image = models.ImageField(upload_to="instrumente/", null=True, blank=True)
+    tags = ArrayField(
+        models.CharField(max_length=30),
+        default=list,
+        blank=True,
+        help_text="Keywords for filtering on the shop's pages, separated by commas, like: vintage, beginner.",
+    )
 
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="instruments")
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT, related_name="instruments")
@@ -237,6 +254,8 @@ class Instrument(models.Model):
             models.Index(fields=["price"], name="instrument_price_idx"),
             models.Index(fields=["condition"], name="instrument_condition_idx"),
             models.Index(fields=["-date_added"], name="instrument_date_added_idx"),
+            # a GIN index looks inside arrays: it serves "tags contain all of these" filters
+            GinIndex(fields=["tags"], name="instrument_tags_gin"),
         ]
         constraints = [
             models.CheckConstraint(
@@ -265,6 +284,24 @@ class Instrument(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        # run by full_clean(), before saving from the admin: tags in lowercase, without repeats,
+        # so a filter for "vintage" also finds a tag typed as "Vintage "
+        self.tags = list(dict.fromkeys(t.strip().lower() for t in self.tags if t.strip()))
+
+    def get_absolute_url(self):
+        """The instrument's own page: /produse/<id>. Templates and the admin's "View on site" use it."""
+        return reverse("instruments:produs", args=[self.id])
+
+    @property
+    def out_of_stock(self):
+        return self.stock == 0
+
+    @property
+    def limited_stock(self):
+        """Still in stock, but fewer than settings.STOC_MIN."""
+        return 0 < self.stock < settings.STOC_MIN
 
 
 class Recording(models.Model):

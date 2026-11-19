@@ -1,7 +1,14 @@
-from django.shortcuts import render
+from collections import Counter
+
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import urlencode
 
 from . import accesari as jurnal
 from .accesari import COLOANE, cate
+from .models import Category, Instrument
 
 DESCRIERE = (
     "Resonance is an online shop for musical instruments: electric and acoustic guitars, basses, "
@@ -46,8 +53,168 @@ def faq(request):
 # In later labs these views get their real content (products from the database, the contact form).
 
 
+# ---------- The shop's listings (lab 4) ----------
+
+# ?by=... in the address → the field it sorts by. Only these, so nobody can sort by any column.
+SORTARI = {"name": "name", "price": "price", "date": "date_added", "stock": "stock"}
+ETICHETE_SORTARI = {"name": "Name", "price": "Price", "date": "Date added", "stock": "Stock"}
+
+
+def _adresa(request, **schimbari):
+    """The current address's query string with some parameters changed: a value of None removes
+    the parameter, a list sets it several times (?tag=a&tag=b). Every other parameter stays."""
+    parametri = request.GET.copy()
+    for nume, valoare in schimbari.items():
+        if valoare is None:
+            parametri.pop(nume, None)
+        elif isinstance(valoare, list):
+            parametri.setlist(nume, valoare)
+        else:
+            parametri[nume] = valoare
+    text = parametri.urlencode()
+    return "?" + text if text else request.path
+
+
+def _listare(request, instrumente, categorie=None):
+    """Sorting, tag filtering and pagination, shared by /produse and /categorii/<name>.
+
+    Both pages call it with their own starting QuerySet (all instruments, or one category's)
+    and render the same template, so the rules live in one place.
+    """
+    mesaje = []
+
+    # Tags: ?tag=vintage&tag=stage keeps only instruments that have ALL of them.
+    # __contains on an ArrayField is PostgreSQL's @> operator: "the array contains these values".
+    active = list(dict.fromkeys(t.strip().lower() for t in request.GET.getlist("tag") if t.strip()))
+    toate = instrumente  # this page's instruments before the tags: all of them, or one category's
+    if active:
+        instrumente = instrumente.filter(tags__contains=active)
+
+    # The filter panel's tags. Always the same list: every tag of this page's instruments, most
+    # common first, so ticking one never makes others disappear or move. The number next to each:
+    # how many of the instruments shown now have it, which is also how many would stay if you
+    # ticked it too (0: none would). values_list("tags", flat=True) reads only that column.
+    def numara(qs):
+        return Counter(tag for taguri in qs.values_list("tags", flat=True) for tag in taguri)
+
+    in_pagina = numara(toate)
+    acum = numara(instrumente) if active else in_pagina
+    ordine = [tag for tag, _ in sorted(in_pagina.items(), key=lambda p: (-p[1], p[0]))]
+    ordine += [tag for tag in active if tag not in in_pagina]  # a tag from the address that this page doesn't have
+    taguri_filtru = [(tag, acum.get(tag, 0), tag in active) for tag in ordine]
+    restul = taguri_filtru[12:]
+
+    # Sorting: ?by=price&sort=d. Either one alone uses a default for the other.
+    # An empty by= is the panel's "Newest first", which ignores sort=.
+    dupa, sens = request.GET.get("by") or None, request.GET.get("sort") or None
+    if request.GET.get("by") == "":
+        sens = None
+    if dupa is not None and dupa not in SORTARI:
+        mesaje.append(f"Instruments can be sorted by {', '.join(SORTARI)}, not by \u201c{dupa}\u201d.")
+        dupa = None
+    if sens is not None and sens not in ("a", "d"):
+        mesaje.append(f"The order is a (ascending) or d (descending), not \u201c{sens}\u201d.")
+        sens = None
+    if dupa or sens:
+        dupa, sens = dupa or "name", sens or "a"
+        camp = SORTARI[dupa]
+        # "id" as a tie-break: instruments with the same price keep a fixed order between pages
+        instrumente = instrumente.order_by(camp if sens == "a" else "-" + camp, "id")
+    else:
+        instrumente = instrumente.order_by("-date_added", "id")  # newest first
+
+    # Pagination, on the sorted and filtered QuerySet. get_page() turns a missing, wrong or
+    # too large ?page= into the first or last page instead of an error.
+    paginator = Paginator(instrumente, settings.PROD_PER_PAG)
+    pagina = paginator.get_page(request.GET.get("page"))
+
+    # The links for tags. Clicking a tag adds it to the active ones and goes back to page 1.
+    for instrument in pagina:
+        instrument.linkuri_taguri = [
+            (tag, _adresa(request, tag=active if tag in active else active + [tag], page=None), tag in active)
+            for tag in instrument.tags
+        ]
+    taguri_active = [(tag, _adresa(request, tag=[t for t in active if t != tag], page=None)) for tag in active]
+
+    return render(request, "instruments/produse.html", {
+        "categorie": categorie,
+        "pagina": pagina,
+        "taguri_active": taguri_active,
+        "fara_taguri": _adresa(request, tag=None, page=None),
+        "taguri_principale": taguri_filtru[:12],
+        "taguri_restul": restul,
+        # the "more tags" part starts open if one of its tags is ticked
+        "restul_deschis": any(bifat for _, _, bifat in restul),
+        "numar_filtre": len(active),
+        "dupa": dupa or "",
+        "sens": sens or "",
+        "sortari": ETICHETE_SORTARI,
+        "mesaje": mesaje,
+        "stoc_min": settings.STOC_MIN,
+    })
+
+
+def _instrumente():
+    # select_related: the category and brand come in the same query (a JOIN), not one query per card
+    return Instrument.objects.select_related("category", "brand")
+
+
+def _fara_sortare_goala(request):
+    """The panel's "Newest first" sends an empty by= (and a sort= that means nothing then).
+    Returns a redirect to the same page without them, so addresses stay short, or None."""
+    if request.GET.get("by") != "":
+        return None
+    parametri = request.GET.copy()
+    for nume in ("by", "sort", "page"):
+        parametri.pop(nume, None)
+    return redirect(request.path + ("?" + parametri.urlencode() if parametri else ""))
+
+
 def produse(request):
-    return render(request, "instruments/in_lucru.html", {"pagina": "Products"})
+    """/produse: every instrument, whatever its category."""
+    return _fara_sortare_goala(request) or _listare(request, _instrumente())
+
+
+def categorie(request, nume):
+    """/categorii/<name>: one category's instruments, with the same sorting, filters and pages."""
+    try:
+        gasita = Category.objects.get(name=nume)
+    except Category.DoesNotExist:
+        return _negasit(request, "No such category", f"The shop has no category called \u201c{nume}\u201d.")
+    return _fara_sortare_goala(request) or _listare(request, _instrumente().filter(category=gasita), categorie=gasita)
+
+
+def produs(request, id):
+    """/produse/<id>: one instrument, with all its details (the address get_absolute_url() gives)."""
+    try:
+        instrument = (
+            Instrument.objects.select_related("category", "brand", "distributor")
+            .prefetch_related("services", "recordings")  # two more queries for these, instead of one per item
+            .get(pk=id)
+        )
+    except Instrument.DoesNotExist:
+        return _negasit(
+            request,
+            "Instrument not found",
+            f"There's no instrument number {id} in the shop. It may have been sold and taken off the site.",
+        )
+    # order_by("?") lets the database pick them at random
+    asemanatoare = (
+        Instrument.objects.filter(category=instrument.category)
+        .exclude(pk=instrument.pk)
+        .order_by("?")[: settings.PRODUSE_ASEMANATOARE]
+    )
+    return render(request, "instruments/produs.html", {
+        "instrument": instrument,
+        "asemanatoare": asemanatoare,
+        # from the product page, a tag opens the full listing filtered by it ("solid top" → ?tag=solid+top)
+        "taguri": [(tag, reverse("instruments:produse") + "?" + urlencode({"tag": tag})) for tag in instrument.tags],
+    })
+
+
+def _negasit(request, titlu, text):
+    """The error page for an instrument or category that doesn't exist, with the 404 status."""
+    return render(request, "instruments/eroare.html", {"titlu": titlu, "text": text}, status=404)
 
 
 def contact(request):

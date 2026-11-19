@@ -661,3 +661,540 @@ details.ajutor dd {
     scroll-behavior: auto;
   }
 }
+
+/* ==========================================================================
+   The shop: listings, product page, category pages (lab 4)
+   --culoare-categorie is set on each element from the category's colour in the database.
+   ========================================================================== */
+
+.icon-categorie {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75em;
+  height: 1.75em;
+  flex: none;
+  border-radius: 50%;
+  background: var(--culoare-categorie, var(--palisandru));
+  color: #fff;
+  font-size: 0.75rem;
+}
+/* Font Awesome draws its icons 1/8 of their size high, to line up with text beside them;
+   inside a circle that looks off-centre, so they move back down by the same amount. */
+.icon-categorie i {
+  transform: translateY(0.125em);
+}
+.icon-mare {
+  font-size: 1.6rem;
+}
+.categorie-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--cerneala);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.categorie-link:hover {
+  text-decoration: underline;
+}
+
+.antet-categorie {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.antet-categorie h1 {
+  color: var(--culoare-categorie);
+  margin-bottom: 0.25em;
+}
+.antet-categorie .introducere {
+  margin: 0;
+}
+
+/* active tags above the results */
+.taguri-active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+.taguri-active ul {
+  display: contents;
+  list-style: none;
+}
+.tag-activ {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.8rem;
+  border-radius: 999px;
+  background: var(--palisandru);
+  color: var(--sidef);
+  font-weight: 700;
+  text-decoration: none;
+}
+.tag-activ span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: rgb(251 252 251 / 0.18);
+}
+.tag-activ:hover span {
+  background: var(--eroare);
+}
+
+/* the shop's two columns: filter panel and results */
+.vitrina {
+  display: grid;
+  grid-template-columns: 16.5rem minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+  margin-top: 2.5rem;
+}
+.rezultate > :first-child {
+  margin-top: 0;
+}
+.comutator-filtre,
+.buton-filtre {
+  display: none;
+}
+.filtre fieldset {
+  border: 0;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+.filtre legend {
+  font-family: var(--font-titlu);
+  font-size: var(--pas-1);
+  font-weight: 800;
+  padding: 0;
+  margin-bottom: 0.2rem;
+}
+.ajutor-filtru {
+  font-size: 0.82rem;
+  color: var(--cerneala-slaba);
+  margin: 0 0 0.6rem;
+}
+.numar {
+  font-size: 0.8rem;
+  color: var(--cerneala-slaba);
+  font-variant-numeric: tabular-nums;
+}
+
+/* a tag: any number of choices, drawn like the tags on the cards */
+.optiuni-taguri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.optiune-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.65rem;
+  border: 1px solid var(--linie);
+  border-radius: 999px;
+  background: var(--sidef);
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+.optiune-tag:hover {
+  border-color: var(--spuma-inchis);
+}
+.optiune-tag.fara-rezultate {
+  color: var(--cerneala-slaba);
+  border-style: dashed;
+}
+.optiune-tag:has(input:checked) {
+  background: var(--palisandru);
+  border-color: var(--palisandru);
+  color: var(--sidef);
+}
+.optiune-tag:has(input:checked) .numar {
+  color: rgb(251 252 251 / 0.7);
+}
+/* the real checkboxes stay in the page (and in the keyboard order), just out of sight */
+.optiune-tag input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.optiune-tag:has(input:focus-visible) {
+  outline: 3px solid var(--spuma-inchis);
+  outline-offset: 2px;
+}
+.mai-multe-taguri {
+  margin-top: 0.6rem;
+}
+.mai-multe-taguri summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--spuma-inchis);
+  margin-bottom: 0.5rem;
+}
+
+.filtre-sortare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.filtre-sortare legend {
+  grid-column: 1 / -1;
+}
+.filtre-sortare label {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--cerneala-slaba);
+}
+.filtre select {
+  font: inherit;
+  font-size: 0.92rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--linie);
+  background: var(--sidef);
+  color: var(--cerneala);
+}
+.filtre-butoane {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.filtre-butoane button {
+  flex: 1;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--palisandru);
+  color: var(--sidef);
+  cursor: pointer;
+}
+.filtre-butoane button:hover {
+  background: var(--spuma-inchis);
+}
+
+/* counts and pages */
+.numarare {
+  color: var(--cerneala-slaba);
+  margin: 0 0 0.5rem;
+}
+.paginare {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-block: 1px solid var(--linie);
+  margin: 0 0 1.5rem;
+}
+.grila-produse + .paginare {
+  margin: 1.5rem 0 0;
+}
+.paginare a,
+.paginare .dezactivat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.paginare .dezactivat {
+  color: var(--linie);
+}
+.pagina-curenta {
+  color: var(--cerneala-slaba);
+}
+
+/* the cards */
+.grila-produse {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 1.25rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--sidef);
+  border: 1px solid var(--linie);
+  border-top: 5px solid var(--culoare-categorie);
+  border-radius: 4px 4px 8px 8px;
+  overflow: hidden;
+}
+.card-stoc-limitat {
+  border-color: var(--eroare);
+  border-top-color: var(--culoare-categorie);
+  border-width: 2px 2px 2px;
+  border-top-width: 5px;
+}
+.card-imagine img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+.card-corp {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem 1.2rem;
+  flex: 1;
+}
+.card-nume {
+  font-size: 1.55rem;
+  line-height: 1;
+  margin: 0;
+}
+.card-nume a {
+  color: var(--cerneala);
+  text-decoration: none;
+}
+.card-nume a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+.card-specificatii {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.1rem 0.9rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.card-specificatii dt {
+  color: var(--cerneala-slaba);
+}
+.card-specificatii dd {
+  margin: 0;
+}
+.card-pret-stoc {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto; /* price and stock line up at the bottom of every card */
+}
+.pret {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.stoc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--spuma-inchis);
+  font-weight: 700;
+}
+.stoc-limitat {
+  color: var(--eroare);
+}
+.stoc-epuizat {
+  color: var(--cerneala-slaba);
+}
+
+.taguri {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.taguri a {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--linie);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  color: var(--cerneala-slaba);
+  text-decoration: none;
+}
+.taguri a:hover {
+  border-color: var(--spuma-inchis);
+  color: var(--spuma-inchis);
+}
+.taguri a.activ {
+  background: var(--palisandru);
+  border-color: var(--palisandru);
+  color: var(--sidef);
+}
+
+.gol {
+  padding: 2rem 0;
+  font-size: var(--pas-1);
+  color: var(--cerneala-slaba);
+}
+
+/* the product page */
+.firimituri {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  margin-bottom: 1.5rem;
+}
+.produs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+.produs-imagine img {
+  width: 100%;
+  border-radius: 6px;
+  border-top: 6px solid var(--culoare-categorie);
+}
+.produs-info h1 {
+  font-size: var(--pas-4);
+  margin: 0.6rem 0 0.4rem;
+}
+.produs-info h2 {
+  font-size: var(--pas-2);
+  margin: 2rem 0 0.75rem;
+}
+.pret-mare {
+  font-family: var(--font-titlu);
+  font-size: var(--pas-3);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+.produs-info .stoc {
+  margin-bottom: 1rem;
+}
+.specificatii {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.45rem 1.5rem;
+  margin: 0;
+}
+.specificatii dt {
+  font-weight: 700;
+}
+.specificatii dd {
+  margin: 0;
+}
+.servicii,
+.inregistrari {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.servicii li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--linie);
+}
+.servicii .pret {
+  font-size: 1rem;
+}
+.inregistrari li + li {
+  margin-top: 1rem;
+}
+.inregistrari p {
+  margin: 0 0 0.35rem;
+}
+.inregistrari .detaliu {
+  color: var(--cerneala-slaba);
+  font-size: 0.9rem;
+}
+.inregistrari audio {
+  width: 100%;
+}
+
+.asemanatoare {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1.5rem;
+}
+.asemanatoare a {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--cerneala);
+  text-decoration: none;
+}
+.asemanatoare img {
+  border-radius: 4px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  margin-bottom: 0.3rem;
+}
+.asemanator-nume {
+  font-weight: 700;
+}
+.asemanatoare a:hover .asemanator-nume {
+  text-decoration: underline;
+}
+
+@media (max-width: 56rem) {
+  .produs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* the panel goes above the results and folds behind a "Filters" button */
+  .vitrina {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  .comutator-filtre {
+    display: block;
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .buton-filtre {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid var(--palisandru);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .comutator-filtre:focus-visible + .buton-filtre {
+    outline: 3px solid var(--spuma-inchis);
+    outline-offset: 3px;
+  }
+  .comutator-filtre:checked + .buton-filtre {
+    background: var(--palisandru);
+    color: var(--sidef);
+  }
+  .filtre {
+    display: none;
+    margin-top: 1rem;
+    padding: 1.1rem 1.1rem 1.25rem;
+    background: var(--sidef);
+    border: 1px solid var(--linie);
+    border-radius: 8px;
+  }
+  .comutator-filtre:checked ~ .filtre {
+    display: block;
+  }
+}
+@media (max-width: 34rem) {
+  .antet-categorie {
+    align-items: flex-start;
+  }
+  .paginare {
+    font-size: 0.92rem;
+  }
+}

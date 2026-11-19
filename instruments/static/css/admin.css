@@ -1,0 +1,89 @@
+/* The admin in the shop's colours. Django's admin draws everything from CSS variables,
+   so changing the variables recolours it. Its dark theme sets the same variables
+   under stronger selectors, so each theme gets its own block. */
+
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("../fonturi/big-shoulders-display-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Light theme */
+:root,
+html[data-theme="light"] {
+  --fundal-pagina: #e9edec;     /* the page: nickel grey */
+  --fundal-meniu: #f4ede0;      /* the side menu: pale sand */
+  --primary: #2d6b5d;           /* table and section headings */
+  --secondary: #2b1b21;
+  --accent: #e8d5a9;
+  --primary-fg: #fbfcfb;
+  --header-bg: #2b1b21;         /* the header: rosewood */
+  --header-color: #e9edec;
+  --header-branding-color: #e8d5a9;
+  --header-link-color: #fbfcfb;
+  --breadcrumbs-bg: #2d6b5d;    /* the "Home > Shop > Instruments" bar */
+  --breadcrumbs-fg: #cfe5de;
+  --breadcrumbs-link-fg: #ffffff;
+  --link-fg: #2d6b5d;
+  --link-hover-color: #1d4a40;
+  --link-selected-fg: #2b1b21;
+  --selected-row: #f3e3bd;      /* a ticked row in a list, and the current model in the menu */
+  --button-bg: #2d6b5d;
+  --button-hover-bg: #1d4a40;
+  --default-button-bg: #2b1b21;
+  --default-button-hover-bg: #4a3139;
+  --object-tools-bg: #5e4f55;
+  --object-tools-hover-bg: #2b1b21;
+}
+
+/* Dark theme: chosen with the admin's theme button, or "auto" on a computer set to dark */
+html[data-theme="dark"] {
+  --fundal-pagina: #151012;
+  --fundal-meniu: #1e171a;
+  --primary: #1f4d43;
+  --header-bg: #0f0a0c;
+  --header-branding-color: #e8d5a9;
+  --breadcrumbs-bg: #1f4d43;
+  --link-fg: #8cc7b6;
+  --link-hover-color: #b5e0d3;
+  --selected-row: #3a3020;
+  --button-bg: #1f4d43;
+  --button-hover-bg: #2d6b5d;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fundal-pagina: #151012;
+    --fundal-meniu: #1e171a;
+    --primary: #1f4d43;
+    --header-bg: #0f0a0c;
+    --header-branding-color: #e8d5a9;
+    --breadcrumbs-bg: #1f4d43;
+    --link-fg: #8cc7b6;
+    --link-hover-color: #b5e0d3;
+    --selected-row: #3a3020;
+    --button-bg: #1f4d43;
+    --button-hover-bg: #2d6b5d;
+  }
+}
+
+body {
+  background-color: var(--fundal-pagina);
+}
+
+#nav-sidebar {
+  background-color: var(--fundal-meniu);
+}
+
+#site-name a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+#site-name img {
+  border-radius: 5px;
+}

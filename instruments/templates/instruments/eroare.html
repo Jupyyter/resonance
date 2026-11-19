@@ -1,0 +1,12 @@
+{% extends "instruments/baza.html" %}
+{# Shown with the 404 status for an instrument or category that doesn't exist. #}
+
+{% block titlu %}{{ titlu }} | Resonance{% endblock %}
+
+{% block continut %}
+<section class="in-lucru">
+  <h1>{{ titlu }}</h1>
+  <p class="introducere">{{ text }}</p>
+  <p>Browse <a href="{% url 'instruments:produse' %}">all instruments</a>, or pick a category from the menu.</p>
+</section>
+{% endblock %}

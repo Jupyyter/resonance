@@ -1,0 +1,92 @@
+{% extends "instruments/baza.html" %}
+{% load static %}
+
+{% block titlu %}{{ instrument.name }} | Resonance{% endblock %}
+{% block descriere %}{{ instrument.description }}{% endblock %}
+
+{% block continut %}
+<nav class="firimituri" aria-label="You are here">
+  <a href="{% url 'instruments:produse' %}">All instruments</a>
+  <span aria-hidden="true">/</span>
+  <a href="{{ instrument.category.get_absolute_url }}">{{ instrument.category.name }}</a>
+</nav>
+
+<article class="produs" style="--culoare-categorie: {{ instrument.category.color }}">
+  <div class="produs-imagine">
+    <img src="{% if instrument.image %}{{ instrument.image.url }}{% else %}{% static 'imagini/imagine-indisponibila.svg' %}{% endif %}"
+         alt="{% if instrument.image %}{{ instrument.name }}{% else %}No photo of this instrument yet{% endif %}" width="800" height="600">
+  </div>
+
+  <div class="produs-info">
+    <a class="categorie-link" href="{{ instrument.category.get_absolute_url }}">
+      <span class="icon-categorie" aria-hidden="true"><i class="{{ instrument.category.icon_class }}"></i></span>{{ instrument.category.name }}
+    </a>
+    <h1>{{ instrument.name }}</h1>
+    <p class="pret pret-mare">{{ instrument.price|floatformat:"-2g" }} lei</p>
+    {% include "instruments/stoc.html" %}
+    <p>{{ instrument.description }}</p>
+
+    {% if taguri %}
+      <ul class="taguri" aria-label="Tags">
+        {% for tag, adresa in taguri %}<li><a href="{{ adresa }}">{{ tag }}</a></li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    <h2>Specifications</h2>
+    <dl class="specificatii">
+      <dt>Brand</dt>
+      <dd>{% if instrument.brand.website %}<a href="{{ instrument.brand.website }}" rel="noopener">{{ instrument.brand.name }}</a>{% else %}{{ instrument.brand.name }}{% endif %}, {{ instrument.brand.country }}{% if instrument.brand.founded_year %}, since {{ instrument.brand.founded_year }}{% endif %}</dd>
+      <dt>Condition</dt><dd>{{ instrument.get_condition_display }}</dd>
+      <dt>In stock</dt><dd>{{ instrument.stock }}</dd>
+      {% if instrument.materials %}<dt>Materials</dt><dd>{{ instrument.materials|join:", " }}</dd>{% endif %}
+      <dt>Weight</dt><dd>{% if instrument.weight_kg %}{{ instrument.weight_kg }} kg{% else %}not measured yet{% endif %}</dd>
+      <dt>Left-handed</dt><dd>{{ instrument.left_handed|yesno:"yes,no" }}</dd>
+      <dt>Supplied by</dt><dd>{{ instrument.distributor.name|default:"bought from a player" }}</dd>
+      <dt>Added</dt><dd><time datetime="{{ instrument.date_added|date:'c' }}">{{ instrument.date_added|date:"j F Y" }}</time></dd>
+    </dl>
+
+    {% with servicii=instrument.services.all %}
+      {% if servicii %}
+        <h2>Services you can add</h2>
+        <ul class="servicii">
+          {% for s in servicii %}
+            <li><span>{{ s.name }}{% if not s.available %} (not available right now){% endif %}</span> <span class="pret">{{ s.price|floatformat:"-2g" }} lei</span></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% with inregistrari=instrument.recordings.all %}
+      {% if inregistrari %}
+        <h2>Listen</h2>
+        <ul class="inregistrari">
+          {% for r in inregistrari %}
+            <li>
+              <p><b>{{ r.title }}</b> <span class="detaliu">{{ r.get_sound_display }}, {{ r.duration_s }} s</span></p>
+              <audio controls preload="none" src="{{ r.audio_file.url }}"></audio>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+  </div>
+</article>
+
+{% if asemanatoare %}
+<section class="sectiune">
+  <h2>From the same category</h2>
+  <ul class="asemanatoare">
+    {% for a in asemanatoare %}
+      <li>
+        {# the whole item is one link: image, name and price all lead to that instrument #}
+        <a href="{{ a.get_absolute_url }}">
+          <img src="{% if a.image %}{{ a.image.url }}{% else %}{% static 'imagini/imagine-indisponibila.svg' %}{% endif %}" alt="" width="400" height="300" loading="lazy">
+          <span class="asemanator-nume">{{ a.name }}</span>
+          <span class="pret">{{ a.price|floatformat:"-2g" }} lei</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

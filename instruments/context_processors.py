@@ -5,13 +5,18 @@ renders a template with a request (render() does), and merges the dicts they ret
 the footer in baza.html can show the company's details without every view passing them.
 """
 from django.conf import settings
+from django.db.models import Count
 from django.utils import timezone
+
+from .models import Category
 
 # Which top-level menu entry each page belongs to, so the menu can mark where the visitor is.
 SECTIUNI_MENIU = {
     "index": "acasa",
-    "produse": "magazin",
-    "services": "magazin",
+    "produse": "categorii",
+    "produs": "categorii",
+    "categorie": "categorii",
+    "services": "despre",
     "despre": "despre",
     "istoric": "despre",
     "faq": "despre",
@@ -36,6 +41,19 @@ def companie(request):
 
 
 def meniu(request):
-    """The menu entry to mark as current: {{ sectiune_activa }}."""
+    """For the menu: the entry to mark as current ({{ sectiune_activa }}) and the categories
+    of the Categories submenu ({{ categorii_meniu }}).
+
+    The categories come from the database, so a new one appears in the menu by itself. Only
+    those with at least one instrument: Count() adds a column with each one's number of
+    instruments, and filter() keeps the rows where it's over 0. A QuerySet is lazy: the query
+    only runs if a template actually loops over it (the admin's pages never do).
+    """
     potrivire = getattr(request, "resolver_match", None)
-    return {"sectiune_activa": SECTIUNI_MENIU.get(potrivire.url_name) if potrivire else None}
+    return {
+        "sectiune_activa": SECTIUNI_MENIU.get(potrivire.url_name) if potrivire else None,
+        # order_by again: Django leaves out the model's Meta.ordering in queries that group rows (Count)
+        "categorii_meniu": Category.objects.annotate(numar=Count("instruments"))
+        .filter(numar__gt=0)
+        .order_by("display_order", "name"),
+    }

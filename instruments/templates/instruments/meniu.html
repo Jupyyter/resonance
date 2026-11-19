@@ -16,10 +16,21 @@
       <a href="{% url 'instruments:index' %}"{% if sectiune_activa == "acasa" %} class="activ" aria-current="true"{% endif %}>Home</a>
     </li>
     <li class="are-submeniu">
-      <a href="{% url 'instruments:produse' %}"{% if sectiune_activa == "magazin" %} class="activ" aria-current="true"{% endif %}>Shop</a>
+      <a href="{% url 'instruments:produse' %}"{% if sectiune_activa == "categorii" %} class="activ" aria-current="true"{% endif %}>Instrument categories</a>
       <ul class="submeniu">
-        <li><a href="{% url 'instruments:produse' %}">All instruments</a></li>
-        <li><a href="{% url 'instruments:services' %}">Setup and repairs</a></li>
+        <li>
+          <a href="{% url 'instruments:produse' %}">
+            <span class="icon-categorie icon-toate" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>All instruments
+          </a>
+        </li>
+        {# Built from the Category table (the "meniu" context processor): only categories with instruments. #}
+        {% for c in categorii_meniu %}
+          <li>
+            <a href="{{ c.get_absolute_url }}" style="--culoare-categorie: {{ c.color }}">
+              <span class="icon-categorie" aria-hidden="true"><i class="{{ c.icon_class }}"></i></span>{{ c.name }}
+            </a>
+          </li>
+        {% endfor %}
       </ul>
     </li>
     <li class="are-submeniu">
@@ -28,6 +39,7 @@
         {# Links to sections of the About page: the address plus the section's id after # #}
         <li><a href="{% url 'instruments:despre' %}#poveste">Our story</a></li>
         <li><a href="{% url 'instruments:despre' %}#atelier">The workshop</a></li>
+        <li><a href="{% url 'instruments:services' %}">Setup and repairs</a></li>
         <li><a href="{% url 'instruments:despre' %}#vizita">Visit us</a></li>
         <li><a href="{% url 'instruments:istoric' %}">Shop history</a></li>
         <li><a href="{% url 'instruments:faq' %}">Questions</a></li>

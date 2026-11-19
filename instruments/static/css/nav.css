@@ -70,6 +70,7 @@
   color: var(--sidef);
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
 }
 .meniu-lista > li > a:hover,
 .are-submeniu:hover > a,
@@ -145,7 +146,7 @@
 
 /* ---------- Narrow screens ---------- */
 
-@media (max-width: 52rem) {
+@media (max-width: 60rem) {
   .meniu {
     flex-wrap: wrap;
     gap: 0;
@@ -236,4 +237,17 @@
     padding: 0.45rem 0.6rem;
     color: rgb(251 252 251 / 0.85);
   }
+}
+
+/* Category icons in the Categories submenu */
+.submeniu a {
+  white-space: nowrap;
+}
+.submeniu .icon-toate {
+  background: var(--nisip);
+  color: var(--palisandru);
+}
+.submeniu .icon-categorie {
+  margin-right: 0.6rem;
+  vertical-align: -0.1em;
 }

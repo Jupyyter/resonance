@@ -1,0 +1,8 @@
+{# The stock line, for the listing and the product page. limited_stock and out_of_stock are in models.py. #}
+{% if instrument.out_of_stock %}
+  <p class="stoc stoc-epuizat">Sold out</p>
+{% elif instrument.limited_stock %}
+  <p class="stoc stoc-limitat"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Only {{ instrument.stock }} left</p>
+{% else %}
+  <p class="stoc">In stock</p>
+{% endif %}

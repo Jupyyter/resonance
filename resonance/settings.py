@@ -65,7 +65,9 @@ ROOT_URLCONF = "resonance.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # The project's own templates folder, searched before the apps' folders: that's how
+        # templates/admin/base_site.html replaces the admin's own file of the same name.
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -136,6 +138,11 @@ STATIC_URL = "static/"
 # Uploaded files (instrument photos, recordings) go in the media folder, which git ignores.
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# The products pages (lab 4)
+STOC_MIN = 3        # fewer than this many in stock: marked as limited stock
+PROD_PER_PAG = 6    # instruments per page in the listings
+PRODUSE_ASEMANATOARE = 3  # how many random instruments "From the same category" shows
 
 # The shop's details, shown in every page's footer (see instruments/context_processors.py).
 COMPANY_INFO = {

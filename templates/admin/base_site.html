@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{# Replaces Django's admin/base_site.html, because templates/ (settings DIRS) is searched first. #}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <link rel="icon" href="{% static 'imagini/favicon.svg' %}" type="image/svg+xml">
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}">
+    <img src="{% static 'imagini/favicon.svg' %}" alt="" width="34" height="34">
+    {{ site_header|default:_('Django administration') }}
+  </a>
+</div>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

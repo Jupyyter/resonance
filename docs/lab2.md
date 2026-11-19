@@ -88,7 +88,7 @@ Pages:
 - **Server info** (`/info`): the server's date and time, or only the date or time (`?data=zi`, `?data=timp`).
 - **Visit log** (`/log`): every page visit since the server started, with options for choosing and showing them, plus the least and most visited pages. Each visit has its own page, `/accesare<id>`.
 
-Every page shares the same header and footer. The header holds the menu: Home, Shop (submenu: all instruments, setup and repairs), About (submenu: three links to sections of the About page, shop history, questions), Contact, Site (submenu: server info, visit log) and Cart. On phones the menu folds behind a Menu button.
+Every page shares the same header and footer. The header holds the menu: Home, Instrument categories (submenu: all instruments, then each category; added in lab 4), About (submenu: three links to sections of the About page, setup and repairs, shop history, questions), Contact, Site (submenu: server info, visit log) and Cart. On phones the menu folds behind a Menu button.
 
 The footer shows the copyright line, the company's details and the visitor's IP address. The details come from a dictionary in `settings.py` with the name, founding year, phone number and address of the main shop, plus two characteristics of our choice: the **email address** and the **opening hours**.
 
@@ -114,6 +114,7 @@ The database describes the shop and the instruments it sells. Users, orders and 
 - date_added: datetime, the moment it was added
 - materials: list of strings, the multivalued attribute (for example alder, maple, rosewood)
 - image: image file, a photo of the instrument
+- tags: list of strings, a second multivalued attribute: keywords for filtering (for example vintage, beginner), added in lab 4
 
 **Category**: how instruments are grouped (electric guitars, basses, keyboards and so on).
 - id: integer, primary key
@@ -162,7 +163,7 @@ Eleven types are used: integer, string, text, decimal, float, boolean, enum, dat
 
 ### Third normal form
 
-- **First normal form**: every attribute holds a single value. The one exception is materials, the multivalued attribute the lab asks for.
+- **First normal form**: every attribute holds a single value. The exceptions are materials and tags, the multivalued attributes the labs ask for.
 - **Second normal form**: every entity has a single-attribute key, except Recording, whose key is the instrument's id plus the number. Recording's other attributes depend on that whole key, not on part of it: a title belongs to one recording of one instrument.
 - **Third normal form**: no attribute depends on another attribute that isn't a key. Facts about a brand (country, website) are kept in Brand, not repeated in every instrument. A category's colour is kept in Category, and a distributor's email and phone in Distributor.
 - **No derived attributes**: nothing can be computed from other data. For example, there's no number of recordings per instrument, no price with VAT, and no brand age (it follows from founded_year).

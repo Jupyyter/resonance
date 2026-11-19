@@ -23,7 +23,7 @@ class PaginiTest(TestCase):
             self.assertEqual(self.get(adresa).status_code, 200, adresa)
 
     def test_paginile_neterminate_arata_in_lucru(self):
-        for adresa in ["/produse", "/contact", "/cos_virtual"]:
+        for adresa in ["/contact", "/cos_virtual"]:
             self.assertContains(self.get(adresa), "<title>In lucru</title>", html=False)
 
     def test_fiecare_pagina_e_inregistrata(self):
@@ -218,3 +218,136 @@ class IncarcaDateTest(TestCase):
             self.incarca("--fisier", f.name)
         self.assertIn("The colour must be #", str(eroare.exception))
         self.assertFalse(Category.objects.exists())  # not even the good row was kept
+
+
+class ProduseTest(TestCase):
+    """Lab 4: the listings, product pages, category pages and the menu."""
+
+    @classmethod
+    def setUpTestData(cls):
+        # made once for the whole class; every test still runs inside its own transaction
+        from .models import Brand, Category, Distributor, Instrument
+
+        cls.chitare = Category.objects.create(name="Guitars", description="Six strings.", icon="guitar", display_order=2)
+        cls.tobe = Category.objects.create(name="Drums", description="Kits.", icon="drum", display_order=1)
+        cls.goala = Category.objects.create(name="Empty", description="For testing: no instruments.", display_order=3)
+        brand = Brand.objects.create(name="Fender", country="USA")
+        distribuitor = Distributor.objects.create(name="Test SRL", email="t@example.com")
+
+        def instrument(nume, pret, categorie, taguri, stoc=5):
+            return Instrument.objects.create(
+                name=nume, description="x", price=pret, stock=stoc, category=categorie, brand=brand,
+                distributor=distribuitor, tags=taguri,
+            )
+
+        cls.ieftin = instrument("A cheap one", 100, cls.chitare, ["beginner", "compact"], stoc=1)
+        cls.scump = instrument("B dear one", 900, cls.chitare, ["stage"])
+        cls.mijlociu = instrument("C middle one", 500, cls.chitare, ["beginner"])
+        cls.toba = instrument("D drum", 300, cls.tobe, ["beginner", "compact"])
+
+    def get(self, adresa):
+        with redirect_stdout(StringIO()):
+            return self.client.get(adresa)
+
+    def nume(self, raspuns):
+        return [i.name for i in raspuns.context["pagina"]]
+
+    def test_sortare_dupa_pret(self):
+        self.assertEqual(self.nume(self.get("/produse?by=price&sort=a")), ["A cheap one", "D drum", "C middle one", "B dear one"])
+        self.assertEqual(self.nume(self.get("/produse?by=price&sort=d"))[0], "B dear one")
+
+    def test_sortare_gresita_arata_mesaj(self):
+        self.assertContains(self.get("/produse?by=colour"), "not by")
+
+    def test_taguri_le_cer_pe_toate(self):
+        self.assertEqual(sorted(self.nume(self.get("/produse?tag=beginner&tag=compact"))), ["A cheap one", "D drum"])
+        self.assertEqual(self.nume(self.get("/produse?tag=stage")), ["B dear one"])
+
+    def test_paginare_pastreaza_parametrii(self):
+        with self.settings(PROD_PER_PAG=2):
+            raspuns = self.get("/produse?by=price&sort=a&tag=beginner")
+        self.assertContains(raspuns, "Showing instruments 1 to 2 of 3.")
+        self.assertContains(raspuns, "Page 1 of 2")
+        self.assertContains(raspuns, 'href="?by=price&amp;sort=a&amp;tag=beginner&amp;page=2"')
+
+    def test_pagina_produsului_si_eroarea(self):
+        raspuns = self.get(self.scump.get_absolute_url())
+        self.assertContains(raspuns, "B dear one")
+        self.assertContains(raspuns, "From the same category")
+        asemanatoare = list(raspuns.context["asemanatoare"])
+        self.assertTrue(asemanatoare)
+        self.assertTrue(all(a.category == self.chitare and a != self.scump for a in asemanatoare))
+        self.assertEqual(self.get("/produse/999999").status_code, 404)
+
+    def test_stoc_limitat(self):
+        self.assertContains(self.get(self.ieftin.get_absolute_url()), "Only 1 left")
+
+    def test_pagina_categoriei(self):
+        raspuns = self.get(self.tobe.get_absolute_url())
+        self.assertEqual(self.nume(raspuns), ["D drum"])
+        self.assertContains(raspuns, "Kits.")
+        self.assertEqual(self.get("/categorii/Nothing").status_code, 404)
+
+    def test_meniul_are_doar_categoriile_cu_instrumente_in_ordine(self):
+        meniu = list(self.get("/").context["categorii_meniu"])
+        self.assertEqual([c.name for c in meniu], ["Drums", "Guitars"])  # "Empty" is left out
+
+    def test_actiunea_export_csv(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_superuser("admin", "a@example.com", "parola")
+        self.client.login(username="admin", password="parola")
+        raspuns = self.client.post(
+            "/admin/instruments/instrument/",
+            {"action": "export_csv", "_selected_action": [self.ieftin.pk, self.toba.pk]},
+        )
+        self.assertEqual(raspuns["Content-Type"], "text/csv; charset=utf-8")
+        text = raspuns.content.decode("utf-8-sig")
+        self.assertIn("A cheap one", text)
+        self.assertNotIn("B dear one", text)
+
+
+class PanouFiltreTest(ProduseTest):
+    """The filter panel (several tags at once, sorting) and the menu.
+    Inherits the data (and tests) of ProduseTest."""
+
+    def test_mai_multe_taguri_deodata(self):
+        raspuns = self.get("/produse?tag=beginner&tag=compact")
+        self.assertEqual(sorted(self.nume(raspuns)), ["A cheap one", "D drum"])
+
+    def test_pe_pagina_categoriei_tagurile_raman_in_categorie(self):
+        raspuns = self.get("/categorii/Guitars?tag=beginner")
+        self.assertEqual(sorted(self.nume(raspuns)), ["A cheap one", "C middle one"])  # not the drum
+        self.assertContains(raspuns, 'action="/categorii/Guitars"')
+
+    def test_cele_mai_noi_curata_adresa(self):
+        # "Newest first" sends an empty by= and a sort= that means nothing; both are dropped
+        for pagina in ("/produse", "/categorii/Guitars"):
+            raspuns = self.get(pagina + "?tag=beginner&by=&sort=a")
+            self.assertRedirects(raspuns, pagina + "?tag=beginner", fetch_redirect_response=False)
+
+    def taguri(self, adresa):
+        context = self.get(adresa).context
+        return [(tag, numar, bifat) for tag, numar, bifat in context["taguri_principale"] + context["taguri_restul"]]
+
+    def test_numerele_din_panou(self):
+        taguri = {tag: (numar, bifat) for tag, numar, bifat in self.taguri("/produse?tag=beginner")}
+        self.assertEqual(taguri["beginner"], (3, True))  # all 3 results have it
+        self.assertEqual(taguri["compact"], (2, False))  # ticking it too would leave 2
+        self.assertEqual(taguri["stage"], (0, False))  # no result has it: still offered, with 0
+
+    def test_lista_de_taguri_nu_se_schimba_cand_bifezi(self):
+        inainte = [tag for tag, _, _ in self.taguri("/produse")]
+        dupa = [tag for tag, _, _ in self.taguri("/produse?tag=stage")]
+        self.assertEqual(inainte, dupa)  # same tags, same order
+
+    def test_pe_pagina_categoriei_doar_tagurile_ei(self):
+        taguri = [tag for tag, _, _ in self.taguri("/categorii/Drums")]
+        self.assertEqual(sorted(taguri), ["beginner", "compact"])  # not "stage": no drum has it
+
+    def test_meniul(self):
+        raspuns = self.get("/")
+        self.assertContains(raspuns, ">Instrument categories</a>")
+        self.assertContains(raspuns, "All instruments")
+        self.assertContains(raspuns, 'href="/services"')  # Setup and repairs, now under About
+        self.assertNotContains(raspuns, ">Shop</a>")

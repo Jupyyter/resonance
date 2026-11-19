@@ -1,0 +1,158 @@
+{% extends "instruments/baza.html" %}
+{% load static %}
+{# One template for two pages: every instrument (/produse) and one category's (/categorii/<name>). #}
+{# The view sends "categorie" only for a category page.                                              #}
+
+{% block titlu %}{% if categorie %}{{ categorie.name }}{% else %}All instruments{% endif %} | Resonance{% endblock %}
+{% block descriere %}{% if categorie %}{{ categorie.description }}{% else %}Every instrument in the Resonance shop, set up in our workshop before it ships.{% endif %}{% endblock %}
+
+{% block continut %}
+{% if categorie %}
+  <header class="antet-categorie" style="--culoare-categorie: {{ categorie.color }}">
+    <span class="icon-categorie icon-mare" aria-hidden="true"><i class="{{ categorie.icon_class }}"></i></span>
+    <div>
+      <h1>{{ categorie.name }}</h1>
+      <p class="introducere">{{ categorie.description }}</p>
+    </div>
+  </header>
+{% else %}
+  <h1>All instruments</h1>
+  <p class="introducere">Every instrument in the shop. Each one goes through the workshop before it ships.</p>
+{% endif %}
+
+<div class="vitrina">
+  {# ---------- The filter panel: one form for the tags and the sorting ---------- #}
+  <aside class="panou-filtre" aria-label="Filters">
+    {# on phones the panel folds behind this button, like the menu (a checkbox, no JavaScript) #}
+    <input type="checkbox" id="comutator-filtre" class="comutator-filtre">
+    <label for="comutator-filtre" class="buton-filtre">
+      <i class="fa-solid fa-sliders" aria-hidden="true"></i> Filters{% if numar_filtre %} ({{ numar_filtre }}){% endif %}
+    </label>
+
+    {# Sent to the page it's on: on a category page, the tags filter within that category. #}
+    <form class="filtre" method="get" action="{{ request.path }}">
+      {% if taguri_principale %}
+        <fieldset>
+          <legend>Tags</legend>
+          <p class="ajutor-filtru">Tick as many as you like. Instruments must have all of them; the numbers show how many would stay.</p>
+          <div class="optiuni-taguri">
+            {% for tag, numar, bifat in taguri_principale %}
+              <label class="optiune-tag{% if not numar %} fara-rezultate{% endif %}"><input type="checkbox" name="tag" value="{{ tag }}"{% if bifat %} checked{% endif %}>{{ tag }} <span class="numar">{{ numar }}</span></label>
+            {% endfor %}
+          </div>
+          {% if taguri_restul %}
+            {# its ticked boxes are sent with the form even while it's closed #}
+            <details class="mai-multe-taguri"{% if restul_deschis %} open{% endif %}>
+              <summary>{{ taguri_restul|length }} more tags</summary>
+              <div class="optiuni-taguri">
+                {% for tag, numar, bifat in taguri_restul %}
+                  <label class="optiune-tag{% if not numar %} fara-rezultate{% endif %}"><input type="checkbox" name="tag" value="{{ tag }}"{% if bifat %} checked{% endif %}>{{ tag }} <span class="numar">{{ numar }}</span></label>
+                {% endfor %}
+              </div>
+            </details>
+          {% endif %}
+        </fieldset>
+      {% endif %}
+
+      <fieldset class="filtre-sortare">
+        <legend>Sort</legend>
+        <label>By
+          <select name="by">
+            <option value=""{% if not dupa %} selected{% endif %}>Newest first</option>
+            {% for valoare, eticheta in sortari.items %}
+              <option value="{{ valoare }}"{% if valoare == dupa %} selected{% endif %}>{{ eticheta }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Order
+          <select name="sort">
+            <option value="a"{% if sens != "d" %} selected{% endif %}>Ascending</option>
+            <option value="d"{% if sens == "d" %} selected{% endif %}>Descending</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <div class="filtre-butoane">
+        <button type="submit">Apply filters</button>
+        {% if numar_filtre or dupa %}<a href="{{ request.path }}">Reset</a>{% endif %}
+      </div>
+    </form>
+  </aside>
+
+  {# ---------- The results ---------- #}
+  <div class="rezultate">
+    {% for mesaj in mesaje %}<p class="mesaj">{{ mesaj }}</p>{% endfor %}
+
+    {% if taguri_active %}
+      <div class="taguri-active">
+        <span>Tagged:</span>
+        <ul>
+          {% for tag, fara_el in taguri_active %}
+            <li><a class="tag-activ" href="{{ fara_el }}" aria-label="Remove the {{ tag }} filter">{{ tag }} <span aria-hidden="true">&times;</span></a></li>
+          {% endfor %}
+        </ul>
+        {% if taguri_active|length > 1 %}<a href="{{ fara_taguri }}">Clear all</a>{% endif %}
+      </div>
+    {% endif %}
+
+    {% if pagina.paginator.count %}
+      <p class="numarare">Showing instruments {{ pagina.start_index }} to {{ pagina.end_index }} of {{ pagina.paginator.count }}.</p>
+
+      {# Defined once, shown above and below the list. {% querystring %} keeps every parameter #}
+      {# in the address (sorting, tags) and changes only page=.                              #}
+      {% partialdef paginare inline %}
+      <nav class="paginare" aria-label="Pages">
+        {% if pagina.has_previous %}
+          <a href="{% querystring page=pagina.previous_page_number %}" rel="prev"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
+        {% else %}<span class="dezactivat"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</span>{% endif %}
+        <span class="pagina-curenta">Page {{ pagina.number }} of {{ pagina.paginator.num_pages }}</span>
+        {% if pagina.has_next %}
+          <a href="{% querystring page=pagina.next_page_number %}" rel="next">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+        {% else %}<span class="dezactivat">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>{% endif %}
+      </nav>
+      {% endpartialdef %}
+
+      <ul class="grila-produse">
+        {% for i in pagina %}
+          <li class="card{% if i.limited_stock or i.out_of_stock %} card-stoc-limitat{% endif %}" style="--culoare-categorie: {{ i.category.color }}">
+            <a class="card-imagine" href="{{ i.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+              <img src="{% if i.image %}{{ i.image.url }}{% else %}{% static 'imagini/imagine-indisponibila.svg' %}{% endif %}"
+                   alt="" width="400" height="300" loading="lazy">
+            </a>
+            <div class="card-corp">
+              <a class="categorie-link" href="{{ i.category.get_absolute_url }}">
+                <span class="icon-categorie" aria-hidden="true"><i class="{{ i.category.icon_class }}"></i></span>{{ i.category.name }}
+              </a>
+              <h2 class="card-nume"><a href="{{ i.get_absolute_url }}">{{ i.name }}</a></h2>
+              <dl class="card-specificatii">
+                <dt>Brand</dt><dd>{{ i.brand.name }}</dd>
+                <dt>Condition</dt><dd>{{ i.get_condition_display }}</dd>
+                {% if i.weight_kg %}<dt>Weight</dt><dd>{{ i.weight_kg }} kg</dd>{% endif %}
+              </dl>
+              <div class="card-pret-stoc">
+                <p class="pret">{{ i.price|floatformat:"-2g" }} lei</p>
+                {% include "instruments/stoc.html" with instrument=i %}
+              </div>
+              {% if i.linkuri_taguri %}
+                <ul class="taguri" aria-label="Tags">
+                  {% for tag, adresa, activ in i.linkuri_taguri %}
+                    <li><a href="{{ adresa }}"{% if activ %} class="activ" aria-current="true"{% endif %}>{{ tag }}</a></li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+
+      {% partial paginare %}
+    {% else %}
+      {% if taguri_active %}
+        <p class="gol">No instruments have all these tags. Remove one of them above to see more.</p>
+      {% else %}
+        <p class="gol">There are no instruments {% if categorie %}in this category {% endif %}yet.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

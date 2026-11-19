@@ -14,8 +14,12 @@ urlpatterns = [
     path("istoric", views.istoric, name="istoric"),
     path("services", views.services, name="services"),
     path("faq", views.faq, name="faq"),
-    # Not built yet: their views show in_lucru.html for now.
     path("produse", views.produse, name="produse"),
+    # <int:id> only matches digits, and hands them to the view already as an int
+    path("produse/<int:id>", views.produs, name="produs"),
+    # <str:nume> matches anything up to the next "/", spaces included (they arrive as %20)
+    path("categorii/<str:nume>", views.categorie, name="categorie"),
+    # Not built yet: their views show in_lucru.html for now.
     path("contact", views.contact, name="contact"),
     path("cos_virtual", views.cos_virtual, name="cos_virtual"),
     # A regular expression instead of path()'s simpler syntax: "accesare" followed directly by
