@@ -1,0 +1,36 @@
+{% extends "instruments/baza.html" %}
+
+{% block limba %}ro{% endblock %}
+{% block titlu %}Accesarea {{ id_cerut }}{% endblock %}
+
+{% block continut %}
+<h1>Accesarea {{ id_cerut }}</h1>
+
+{% if a %}
+  <dl class="detalii">
+    <dt>Pagina</dt><dd>{{ a.pagina }}</dd>
+    <dt>URL</dt><dd class="url">{{ a.string_url }}</dd>
+    <dt>Data</dt><dd><time datetime="{{ a.data|date:'c' }}">{{ a.data_text }}</time></dd>
+    <dt>IP client</dt><dd>{{ a.ip_client|default:"necunoscut" }}</dd>
+  </dl>
+
+  <section class="sectiune">
+    <h2>Parametri</h2>
+    {% with parametri=a.parametri_text %}
+      {% if parametri %}
+        <ul class="parametri">
+          {% for nume, valoare in parametri %}
+            <li><span class="parametru-nume">{{ nume }}</span> {{ valoare }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Pagina a fost cerută fără parametri.</p>
+      {% endif %}
+    {% endwith %}
+  </section>
+{% else %}
+  <p class="mesaj mesaj-atentie">Nu există nicio accesare cu id-ul {{ id_cerut }}. Accesările se pierd când serverul repornește.</p>
+{% endif %}
+
+<p><a href="{% url 'instruments:log' %}">Înapoi la jurnal</a></p>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "instruments/baza.html" %}
+
+{% block limba %}ro{% endblock %}
+{% block titlu %}Informații despre server{% endblock %}
+
+{% block continut %}
+<h1>Informații despre server</h1>
+
+{# calculeaza_data() returns HTML already marked safe (format_html), so it's shown as it is. #}
+{{ sectiune_data }}
+
+<p class="ajutor">Doar data: <a href="{% url 'instruments:info' %}?data=zi">?data=zi</a>. Doar ora: <a href="{% url 'instruments:info' %}?data=timp">?data=timp</a>. Amândouă: <a href="{% url 'instruments:info' %}">fără parametru</a>.</p>
+{% endblock %}

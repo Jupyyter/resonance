@@ -1,0 +1,506 @@
+[
+{
+  "model": "instruments.category",
+  "pk": 1,
+  "fields": {
+    "name": "Electric guitars",
+    "description": "Solid-body and hollow-body guitars, played through an amplifier.",
+    "color": "#2D6B5D",
+    "icon": "guitar",
+    "display_order": 1
+  }
+},
+{
+  "model": "instruments.category",
+  "pk": 2,
+  "fields": {
+    "name": "Acoustic guitars",
+    "description": "Steel-string and classical guitars that sound on their own.",
+    "color": "#A0612B",
+    "icon": "guitar",
+    "display_order": 2
+  }
+},
+{
+  "model": "instruments.category",
+  "pk": 3,
+  "fields": {
+    "name": "Basses",
+    "description": "Electric basses with four, five or six strings.",
+    "color": "#3E5C8A",
+    "icon": "guitar",
+    "display_order": 3
+  }
+},
+{
+  "model": "instruments.category",
+  "pk": 4,
+  "fields": {
+    "name": "Keyboards and synthesizers",
+    "description": "Digital pianos, stage pianos and synthesizers.",
+    "color": "#6B4C9A",
+    "icon": "music",
+    "display_order": 4
+  }
+},
+{
+  "model": "instruments.category",
+  "pk": 5,
+  "fields": {
+    "name": "Drums and percussion",
+    "description": "Acoustic and electronic kits, cymbals and hand percussion.",
+    "color": "#8A3B3B",
+    "icon": "drum",
+    "display_order": 5
+  }
+},
+{
+  "model": "instruments.category",
+  "pk": 6,
+  "fields": {
+    "name": "Studio and live gear",
+    "description": "Amplifiers, audio interfaces and microphones.",
+    "color": "#5E4F55",
+    "icon": "microphone",
+    "display_order": 6
+  }
+},
+{
+  "model": "instruments.brand",
+  "pk": 1,
+  "fields": {
+    "name": "Fender",
+    "country": "USA",
+    "website": "https://www.fender.com",
+    "founded_year": 1946
+  }
+},
+{
+  "model": "instruments.brand",
+  "pk": 2,
+  "fields": {
+    "name": "Gibson",
+    "country": "USA",
+    "website": "https://www.gibson.com",
+    "founded_year": 1902
+  }
+},
+{
+  "model": "instruments.brand",
+  "pk": 3,
+  "fields": {
+    "name": "Yamaha",
+    "country": "Japan",
+    "website": "https://www.yamaha.com",
+    "founded_year": 1887
+  }
+},
+{
+  "model": "instruments.brand",
+  "pk": 4,
+  "fields": {
+    "name": "Roland",
+    "country": "Japan",
+    "website": "https://www.roland.com",
+    "founded_year": 1972
+  }
+},
+{
+  "model": "instruments.brand",
+  "pk": 5,
+  "fields": {
+    "name": "Pearl",
+    "country": "Japan",
+    "website": "https://pearldrum.com",
+    "founded_year": 1946
+  }
+},
+{
+  "model": "instruments.brand",
+  "pk": 6,
+  "fields": {
+    "name": "Zildjian",
+    "country": "USA",
+    "website": "https://zildjian.com",
+    "founded_year": 1623
+  }
+},
+{
+  "model": "instruments.distributor",
+  "pk": 1,
+  "fields": {
+    "name": "Carpathia Music Supply",
+    "email": "orders@carpathia-music.example",
+    "phone": "+40 264 000 111"
+  }
+},
+{
+  "model": "instruments.distributor",
+  "pk": 2,
+  "fields": {
+    "name": "Danube Audio Distribution",
+    "email": "sales@danube-audio.example",
+    "phone": "+40 21 000 2200"
+  }
+},
+{
+  "model": "instruments.distributor",
+  "pk": 3,
+  "fields": {
+    "name": "Baltic Sound Trading",
+    "email": "office@balticsound.example",
+    "phone": "+48 22 000 3300"
+  }
+},
+{
+  "model": "instruments.distributor",
+  "pk": 4,
+  "fields": {
+    "name": "Adriatic Instruments",
+    "email": "info@adriatic-instruments.example",
+    "phone": null
+  }
+},
+{
+  "model": "instruments.distributor",
+  "pk": 5,
+  "fields": {
+    "name": "Euro Percussion Partners",
+    "email": "orders@europerc.example",
+    "phone": "+49 30 000 4400"
+  }
+},
+{
+  "model": "instruments.service",
+  "pk": 1,
+  "fields": {
+    "name": "Basic setup",
+    "description": "New strings, neck relief, string height and intonation.",
+    "price": "150.00",
+    "duration_days": 2,
+    "available": true
+  }
+},
+{
+  "model": "instruments.service",
+  "pk": 2,
+  "fields": {
+    "name": "Full setup",
+    "description": "A basic setup, plus fret polish, nut check and cleaned electronics.",
+    "price": "350.00",
+    "duration_days": 3,
+    "available": true
+  }
+},
+{
+  "model": "instruments.service",
+  "pk": 3,
+  "fields": {
+    "name": "Fret level and polish",
+    "description": "Levelling, crowning and polishing the frets.",
+    "price": "400.00",
+    "duration_days": 5,
+    "available": false
+  }
+},
+{
+  "model": "instruments.service",
+  "pk": 4,
+  "fields": {
+    "name": "Electronics repair",
+    "description": "Crackling pots and switches, rewiring, pickup swaps.",
+    "price": "120.00",
+    "duration_days": 2,
+    "available": true
+  }
+},
+{
+  "model": "instruments.service",
+  "pk": 5,
+  "fields": {
+    "name": "Instrument rental",
+    "description": "An instrument for a gig or a session. The price is per day.",
+    "price": "80.00",
+    "duration_days": 1,
+    "available": true
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 1,
+  "fields": {
+    "name": "Fender Player II Stratocaster",
+    "description": "Alder body, maple neck, three single-coil pickups and a two-point tremolo.",
+    "price": "4599.00",
+    "stock": 3,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": 3.6,
+    "date_added": "2026-11-19T06:02:50.644Z",
+    "materials": "[\"alder\", \"maple\", \"rosewood\"]",
+    "image": "",
+    "category": 1,
+    "brand": 1,
+    "distributor": 1,
+    "services": [
+      1,
+      2
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 2,
+  "fields": {
+    "name": "Gibson Les Paul Standard 50s",
+    "description": "Mahogany body with a maple top, two humbuckers and a rounded 50s neck.",
+    "price": "12990.00",
+    "stock": 1,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": 4.3,
+    "date_added": "2026-11-19T06:02:50.686Z",
+    "materials": "[\"mahogany\", \"maple\", \"rosewood\"]",
+    "image": "",
+    "category": 1,
+    "brand": 2,
+    "distributor": 2,
+    "services": [
+      3,
+      2
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 3,
+  "fields": {
+    "name": "Gibson SG Standard",
+    "description": "Cherry finish with light play wear. Checked and set up in our workshop.",
+    "price": "5200.00",
+    "stock": 1,
+    "condition": "used",
+    "left_handed": false,
+    "weight_kg": 3.0,
+    "date_added": "2026-11-19T06:02:50.719Z",
+    "materials": "[\"mahogany\", \"rosewood\"]",
+    "image": "",
+    "category": 1,
+    "brand": 2,
+    "distributor": null,
+    "services": [
+      2
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 4,
+  "fields": {
+    "name": "Yamaha FG800",
+    "description": "Solid spruce top and a full dreadnought sound at a beginner's price.",
+    "price": "1099.00",
+    "stock": 5,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": null,
+    "date_added": "2026-11-19T06:02:50.747Z",
+    "materials": "[\"spruce\", \"nato\", \"walnut\"]",
+    "image": "",
+    "category": 2,
+    "brand": 3,
+    "distributor": 2,
+    "services": [
+      1
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 5,
+  "fields": {
+    "name": "Yamaha C40 II",
+    "description": "Full-size classical guitar with nylon strings, made for first lessons.",
+    "price": "599.00",
+    "stock": 8,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": null,
+    "date_added": "2026-11-19T06:02:50.778Z",
+    "materials": "[\"spruce\", \"meranti\"]",
+    "image": "",
+    "category": 2,
+    "brand": 3,
+    "distributor": 2,
+    "services": []
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 6,
+  "fields": {
+    "name": "Fender Player II Precision Bass LH",
+    "description": "Left-handed bass with a split-coil pickup and a maple neck.",
+    "price": "4499.00",
+    "stock": 1,
+    "condition": "new",
+    "left_handed": true,
+    "weight_kg": 4.1,
+    "date_added": "2026-11-19T06:02:50.843Z",
+    "materials": "[\"alder\", \"maple\", \"rosewood\"]",
+    "image": "",
+    "category": 3,
+    "brand": 1,
+    "distributor": 1,
+    "services": [
+      1
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 7,
+  "fields": {
+    "name": "Yamaha TRBX304",
+    "description": "Active electronics with EQ presets. Returned once, fully checked and restrung.",
+    "price": "1650.00",
+    "stock": 1,
+    "condition": "refurbished",
+    "left_handed": false,
+    "weight_kg": 3.9,
+    "date_added": "2026-11-19T06:02:50.872Z",
+    "materials": "[\"mahogany\", \"maple\"]",
+    "image": "",
+    "category": 3,
+    "brand": 3,
+    "distributor": null,
+    "services": [
+      1
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 8,
+  "fields": {
+    "name": "Yamaha P-145",
+    "description": "Compact 88-key digital piano with weighted keys and built-in speakers.",
+    "price": "2199.00",
+    "stock": 4,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": 11.1,
+    "date_added": "2026-11-19T06:02:50.906Z",
+    "materials": "[]",
+    "image": "",
+    "category": 4,
+    "brand": 3,
+    "distributor": 4,
+    "services": []
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 9,
+  "fields": {
+    "name": "Roland TD-07KV",
+    "description": "Electronic kit with mesh heads on the snare and toms.",
+    "price": "4290.00",
+    "stock": 2,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": null,
+    "date_added": "2026-11-19T06:02:50.936Z",
+    "materials": "[]",
+    "image": "",
+    "category": 5,
+    "brand": 4,
+    "distributor": 5,
+    "services": [
+      5
+    ]
+  }
+},
+{
+  "model": "instruments.instrument",
+  "pk": 10,
+  "fields": {
+    "name": "Pearl Export EXX five-piece kit",
+    "description": "Five-piece kit with poplar and mahogany shells, hardware included.",
+    "price": "3990.00",
+    "stock": 2,
+    "condition": "new",
+    "left_handed": false,
+    "weight_kg": null,
+    "date_added": "2026-11-19T06:02:50.969Z",
+    "materials": "[\"poplar\", \"mahogany\"]",
+    "image": "",
+    "category": 5,
+    "brand": 5,
+    "distributor": 5,
+    "services": [
+      5
+    ]
+  }
+},
+{
+  "model": "instruments.recording",
+  "pk": 1,
+  "fields": {
+    "instrument": 1,
+    "number": 1,
+    "title": "Neck pickup, clean arpeggio",
+    "audio_file": "inregistrari/chitara-electrica-clean.wav",
+    "duration_s": 4,
+    "sound": "clean"
+  }
+},
+{
+  "model": "instruments.recording",
+  "pk": 2,
+  "fields": {
+    "instrument": 1,
+    "number": 2,
+    "title": "Bridge pickup, power chord",
+    "audio_file": "inregistrari/chitara-electrica-overdrive.wav",
+    "duration_s": 3,
+    "sound": "amplified"
+  }
+},
+{
+  "model": "instruments.recording",
+  "pk": 3,
+  "fields": {
+    "instrument": 6,
+    "number": 1,
+    "title": "Fingerstyle bass line",
+    "audio_file": "inregistrari/bas-fingerstyle.wav",
+    "duration_s": 4,
+    "sound": "clean"
+  }
+},
+{
+  "model": "instruments.recording",
+  "pk": 4,
+  "fields": {
+    "instrument": 4,
+    "number": 1,
+    "title": "G major, strummed",
+    "audio_file": "inregistrari/chitara-acustica-acord.wav",
+    "duration_s": 4,
+    "sound": "clean"
+  }
+},
+{
+  "model": "instruments.recording",
+  "pk": 5,
+  "fields": {
+    "instrument": 9,
+    "number": 1,
+    "title": "Two bars of a rock beat",
+    "audio_file": "inregistrari/tobe-electronice-ritm.wav",
+    "duration_s": 5,
+    "sound": "effects"
+  }
+}
+]

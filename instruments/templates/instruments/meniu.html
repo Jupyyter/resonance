@@ -1,0 +1,50 @@
+{% load static %}
+{# The main menu, included by baza.html. Every address comes from {% url %}, by the page's name. #}
+{# sectiune_activa comes from the "meniu" context processor: it marks where the visitor is.      #}
+<nav class="meniu" aria-label="Main menu">
+  <a class="marca" href="{% url 'instruments:index' %}">
+    <img src="{% static 'imagini/favicon.svg' %}" alt="" width="30" height="30">
+    <span>{{ companie.name }}</span>
+  </a>
+
+  {# On small screens the menu folds away; this checkbox, styled as a button, opens it (no JavaScript). #}
+  <input type="checkbox" id="comutator-meniu" class="comutator-meniu">
+  <label for="comutator-meniu" class="buton-meniu">Menu</label>
+
+  <ul class="meniu-lista">
+    <li>
+      <a href="{% url 'instruments:index' %}"{% if sectiune_activa == "acasa" %} class="activ" aria-current="true"{% endif %}>Home</a>
+    </li>
+    <li class="are-submeniu">
+      <a href="{% url 'instruments:produse' %}"{% if sectiune_activa == "magazin" %} class="activ" aria-current="true"{% endif %}>Shop</a>
+      <ul class="submeniu">
+        <li><a href="{% url 'instruments:produse' %}">All instruments</a></li>
+        <li><a href="{% url 'instruments:services' %}">Setup and repairs</a></li>
+      </ul>
+    </li>
+    <li class="are-submeniu">
+      <a href="{% url 'instruments:despre' %}"{% if sectiune_activa == "despre" %} class="activ" aria-current="true"{% endif %}>About</a>
+      <ul class="submeniu">
+        {# Links to sections of the About page: the address plus the section's id after # #}
+        <li><a href="{% url 'instruments:despre' %}#poveste">Our story</a></li>
+        <li><a href="{% url 'instruments:despre' %}#atelier">The workshop</a></li>
+        <li><a href="{% url 'instruments:despre' %}#vizita">Visit us</a></li>
+        <li><a href="{% url 'instruments:istoric' %}">Shop history</a></li>
+        <li><a href="{% url 'instruments:faq' %}">Questions</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="{% url 'instruments:contact' %}"{% if sectiune_activa == "contact" %} class="activ" aria-current="true"{% endif %}>Contact</a>
+    </li>
+    <li class="are-submeniu">
+      <a href="{% url 'instruments:log' %}"{% if sectiune_activa == "site" %} class="activ" aria-current="true"{% endif %}>Site</a>
+      <ul class="submeniu">
+        <li><a href="{% url 'instruments:info' %}">Server info</a></li>
+        <li><a href="{% url 'instruments:log' %}">Visit log</a></li>
+      </ul>
+    </li>
+    <li class="meniu-cos">
+      <a href="{% url 'instruments:cos_virtual' %}"{% if sectiune_activa == "cos" %} class="activ" aria-current="true"{% endif %}>Cart</a>
+    </li>
+  </ul>
+</nav>

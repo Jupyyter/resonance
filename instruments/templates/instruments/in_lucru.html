@@ -1,0 +1,12 @@
+{% extends "instruments/baza.html" %}
+
+{# Shown by every page that isn't built yet (products, contact, cart). #}
+{% block titlu %}In lucru{% endblock %}
+
+{% block continut %}
+<section class="in-lucru">
+  <h1>In lucru</h1>
+  <p class="introducere">The {{ pagina|lower }} page is still being built.</p>
+  <p>Meanwhile you can read <a href="{% url 'instruments:despre' %}">about the shop</a>, see what the workshop does in <a href="{% url 'instruments:services' %}">setup and repairs</a>, or go back to the <a href="{% url 'instruments:index' %}">home page</a>.</p>
+</section>
+{% endblock %}

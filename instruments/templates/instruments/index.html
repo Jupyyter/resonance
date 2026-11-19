@@ -1,0 +1,79 @@
+{% extends "instruments/baza.html" %}
+{% load static %}
+
+{% block titlu %}Resonance | Musical instruments, set up before they ship{% endblock %}
+
+{% block continut %}
+<section class="erou">
+  <div class="erou-text">
+    <h1>Instruments that arrive ready to play</h1>
+    <p class="introducere">{{ descriere }}</p>
+    <p><a class="buton" href="{% url 'instruments:produse' %}">Browse the instruments</a></p>
+  </div>
+  <figure class="erou-figura">
+    <img src="{% static 'imagini/chladni-5-8.svg' %}" width="600" height="600"
+         alt="Pale sand on a dark square plate, gathered into loops and curving lines">
+    <figcaption>Sand on a vibrating plate gathers where the plate stays still. Every resonance draws its own figure.</figcaption>
+  </figure>
+</section>
+
+<section id="ce-vindem" class="sectiune">
+  <h2>What we sell</h2>
+  <ul class="categorii">
+    <li>
+      <h3>Electric guitars</h3>
+      <p>Solid and hollow bodies, from a first guitar to a stage instrument.</p>
+    </li>
+    <li>
+      <h3>Acoustic guitars</h3>
+      <p>Steel-string and classical, with solid and laminated tops.</p>
+    </li>
+    <li>
+      <h3>Basses</h3>
+      <p>Four, five and six strings, fretted and fretless.</p>
+    </li>
+    <li>
+      <h3>Keyboards and synthesizers</h3>
+      <p>Stage pianos, workstations, controllers and analog synths.</p>
+    </li>
+    <li>
+      <h3>Drums and percussion</h3>
+      <p>Acoustic and electronic kits, cymbals and hand percussion.</p>
+    </li>
+    <li>
+      <h3>Studio and live gear</h3>
+      <p>Amplifiers, audio interfaces, microphones, stands and cables.</p>
+    </li>
+  </ul>
+</section>
+
+<section id="incearca" class="sectiune sectiune-doua-coloane">
+  <h2>Look and listen before you buy</h2>
+  <div>
+    <p>Each product page has a 3D model of the instrument. Turn it around, zoom in on the headstock or the controls, and check the finish from every side.</p>
+    <p>Next to it are recordings of that model, played clean and through an amplifier, so you can hear it before it arrives.</p>
+  </div>
+</section>
+
+<section id="comanda" class="sectiune">
+  <h2>How an order works</h2>
+  <ol class="pasi">
+    <li>
+      <h3>You order</h3>
+      <p>Pay online by card or on delivery. We confirm by email the same day.</p>
+    </li>
+    <li>
+      <h3>We set it up</h3>
+      <p>The instrument goes through the workshop: strings, neck, action, intonation and electronics.</p>
+    </li>
+    <li>
+      <h3>It ships in a case</h3>
+      <p>Packed in its case or a padded box, with a note listing what we adjusted.</p>
+    </li>
+    <li>
+      <h3>You have 14 days</h3>
+      <p>Play it at home. If it isn't right, send it back within 14 days of delivery.</p>
+    </li>
+  </ol>
+</section>
+{% endblock %}

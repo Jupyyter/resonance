@@ -1,0 +1,36 @@
+# PostgreSQL for development, in a Docker container. Nothing to install on Windows except Docker Desktop.
+#
+#   docker compose up -d      start it in the background (later it starts by itself with Docker Desktop)
+#   docker compose stop       stop it; the data stays
+#   docker compose down -v    delete the container AND all the data, to start over from zero
+#
+# The passwords come from the .env file (made by genereaza_env.py), which Compose reads by itself.
+# On the very first start, the container runs creare_user.sql to create the app's user and database.
+
+name: resonance
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      # the password of "postgres", the superuser inside the container; you never need to type it
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?is missing from .env - run python genereaza_env.py}"
+      # read by creare_user.sql, as the password of resonance_user
+      DB_PASSWORD: "${DB_PASSWORD:?is missing from .env - run python genereaza_env.py}"
+    ports:
+      # only reachable from this computer; 5433 so it can't clash with a PostgreSQL installed directly
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    volumes:
+      # where the data lives between restarts (PostgreSQL 18 images use /var/lib/postgresql)
+      - date-postgres:/var/lib/postgresql
+      # scripts in this folder run once, when the database is created
+      - ./creare_user.sql:/docker-entrypoint-initdb.d/creare_user.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  date-postgres:

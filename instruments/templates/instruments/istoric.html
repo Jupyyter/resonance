@@ -1,0 +1,36 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Shop history | Resonance{% endblock %}
+{% block descriere %}How Resonance grew from a repair bench into an instrument shop.{% endblock %}
+
+{% block continut %}
+<h1>Shop history</h1>
+<p class="introducere">From a repair bench to a shop with its own workshop, year by year.</p>
+
+<ol class="cronologie">
+  <li>
+    <span class="an">{{ companie.founded }}</span>
+    <p>A repair bench in a Bucharest flat: setups, fret work and electronics for local players.</p>
+  </li>
+  <li>
+    <span class="an">2020</span>
+    <p>The first online sales, mostly second-hand guitars that had been through the bench.</p>
+  </li>
+  <li>
+    <span class="an">2021</span>
+    <p>A rented workshop in Sector 2, and the first new instruments from distributors.</p>
+  </li>
+  <li>
+    <span class="an">2023</span>
+    <p>Keyboards, synthesizers and a small drum room join the shop.</p>
+  </li>
+  <li>
+    <span class="an">2025</span>
+    <p>Rentals for gigs and recording sessions.</p>
+  </li>
+  <li>
+    <span class="an">2026</span>
+    <p>This website, with 3D models and recordings for every instrument.</p>
+  </li>
+</ol>
+{% endblock %}

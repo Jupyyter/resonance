@@ -1,0 +1,32 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Setup and repairs | Resonance{% endblock %}
+{% block descriere %}Setups, fret work, electronics repairs and instrument rentals at the Resonance workshop.{% endblock %}
+
+{% block continut %}
+<h1>Setup and repairs</h1>
+<p class="introducere">The workshop that sets up our instruments also works on yours, whether you bought it here or not.</p>
+
+<section class="sectiune">
+  <h2>Prices</h2>
+  <div class="tabel-derulant">
+    <table class="tabel">
+      <thead>
+        <tr><th scope="col">Service</th><th scope="col">What we do</th><th scope="col" class="numar">Price</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Basic setup</th><td>New strings, neck relief, string height and intonation</td><td class="numar">150 lei</td></tr>
+        <tr><th scope="row">Full setup</th><td>A basic setup, plus fret polish, nut check and cleaned electronics</td><td class="numar">350 lei</td></tr>
+        <tr><th scope="row">Fret work</th><td>Levelling, crowning and polishing; refrets are quoted after a look</td><td class="numar">from 400 lei</td></tr>
+        <tr><th scope="row">Electronics</th><td>Crackling pots and switches, rewiring, pickup swaps</td><td class="numar">from 120 lei</td></tr>
+        <tr><th scope="row">Rental</th><td>Guitars, basses, keyboards and drum kits for gigs and sessions</td><td class="numar">from 80 lei a day</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sectiune">
+  <h2>Booking</h2>
+  <p>Bring the instrument in during opening hours ({{ companie.opening_hours }}) or call <a href="tel:{{ companie.phone|cut:' ' }}">{{ companie.phone }}</a> first. Most setups are ready in two working days.</p>
+</section>
+{% endblock %}

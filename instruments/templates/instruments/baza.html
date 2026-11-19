@@ -1,0 +1,57 @@
+{% load static %}<!DOCTYPE html>
+{# The base template: every page extends it and fills in its blocks. #}
+<html lang="{% block limba %}en{% endblock %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titlu %}Resonance{% endblock %}</title>
+  <meta name="description" content="{% block descriere %}Guitars, basses, keyboards, drums and studio gear, checked and set up in our Bucharest workshop before they ship.{% endblock %}">
+  <link rel="icon" href="{% static 'imagini/favicon.svg' %}" type="image/svg+xml">
+  <link rel="preload" href="{% static 'fonturi/big-shoulders-display-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'fonturi/karla-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/nav.css' %}">
+</head>
+<body>
+  <a class="sari-la-continut" href="#continut">Skip to content</a>
+
+  <header class="antet">
+    {% include "instruments/meniu.html" %}
+  </header>
+
+  <main id="continut" class="continut">
+    {% block continut %}{% endblock %}
+  </main>
+
+  <footer class="subsol">
+    <div class="subsol-coloane">
+      <section class="subsol-firma">
+        <p class="subsol-nume">{{ companie.name }}</p>
+        <p>Musical instruments, checked and set up in our Bucharest workshop since {{ companie.founded }}.</p>
+      </section>
+      <section>
+        <h2>Visit or call</h2>
+        <address>
+          {{ companie.address }}<br>
+          <a href="tel:{{ companie.phone|cut:' ' }}">{{ companie.phone }}</a><br>
+          <a href="mailto:{{ companie.email }}">{{ companie.email }}</a>
+        </address>
+        <p>{{ companie.opening_hours }}</p>
+      </section>
+      <section>
+        <h2>This site</h2>
+        <ul>
+          <li><a href="{% url 'instruments:info' %}">Server info</a></li>
+          <li><a href="{% url 'instruments:log' %}">Visit log</a></li>
+        </ul>
+      </section>
+    </div>
+    <div class="subsol-jos">
+      {# copyright comes from the "companie" context processor, like the details above #}
+      <p>{{ copyright }}</p>
+      {# ip_client is put on the request by IpMiddleware (middleware.py) #}
+      <p>Your IP address: {{ request.ip_client|default:"unknown" }}</p>
+    </div>
+  </footer>
+</body>
+</html>

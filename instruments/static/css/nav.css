@@ -1,0 +1,239 @@
+/* The main menu (meniu.html): a rosewood bar with dropdown submenus.
+   Desktop: a submenu opens on hover, or when keyboard focus moves into it (:focus-within).
+   Narrow screens: the list folds behind a "Menu" button and submenus show as indented lists. */
+
+.antet {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Background image 1: rosewood grain, tiled along the bar (the colour shows while it loads). */
+  background: var(--palisandru) url("../imagini/lemn-palisandru.svg") repeat;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+.antet :focus-visible {
+  outline-color: var(--spuma);
+}
+
+.meniu {
+  max-width: var(--latime);
+  margin: 0 auto;
+  padding: 0 var(--margine);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  min-height: 4rem;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--nisip);
+  font-family: var(--font-titlu);
+  font-size: 1.9rem;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+}
+.marca img {
+  border-radius: 4px;
+}
+
+/* The checkbox and its "Menu" button are only needed on narrow screens (see the end). */
+.comutator-meniu,
+.buton-meniu {
+  display: none;
+}
+
+.meniu-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex: 1;
+  gap: 0.25rem;
+}
+.meniu-lista > li {
+  position: relative;
+}
+.meniu-cos {
+  margin-left: auto;
+}
+
+.meniu-lista > li > a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 4rem;
+  padding: 0 0.9rem;
+  color: var(--sidef);
+  font-weight: 600;
+  text-decoration: none;
+}
+.meniu-lista > li > a:hover,
+.are-submeniu:hover > a,
+.are-submeniu:focus-within > a {
+  color: var(--spuma);
+}
+
+/* The current section gets a pearl dot under it, like the inlay that marks a fret. */
+.meniu-lista > li > a.activ::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.6rem;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #dfe9e6 45%, #a9bfb9);
+}
+
+/* A small chevron after the entries that have a submenu; it turns over when the submenu opens. */
+.are-submeniu > a::before {
+  content: "";
+  order: 2;
+  width: 0.4em;
+  height: 0.4em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.15em) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+.are-submeniu:hover > a::before,
+.are-submeniu:focus-within > a::before {
+  transform: translateY(0.1em) rotate(225deg);
+}
+
+.submeniu {
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 15rem;
+  /* Background image 2: a faint Chladni figure in the corner of every submenu. */
+  background: var(--palisandru-deschis) url("../imagini/model-meniu.svg") no-repeat right -3rem bottom -4.5rem / 13rem;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 1.25rem 2rem -1rem rgb(0 0 0 / 0.55);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.4rem);
+  /* visibility waits until the fade has finished, so links can't be clicked while invisible */
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+}
+.are-submeniu:hover > .submeniu,
+.are-submeniu:focus-within > .submeniu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.submeniu a {
+  display: block;
+  padding: 0.55rem 0.8rem;
+  border-radius: 5px;
+  color: var(--sidef);
+  text-decoration: none;
+}
+.submeniu a:hover {
+  background: rgb(140 199 182 / 0.14);
+  color: var(--spuma);
+}
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 52rem) {
+  .meniu {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  /* Hidden from sight but still focusable, so the menu also opens from the keyboard (Space). */
+  .comutator-meniu {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .buton-meniu {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid rgb(251 252 251 / 0.35);
+    border-radius: 999px;
+    color: var(--sidef);
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+  }
+  /* three lines drawn with one element and two shadows */
+  .buton-meniu::before {
+    content: "";
+    width: 1rem;
+    height: 2px;
+    background: currentColor;
+    box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor;
+  }
+  .comutator-meniu:focus-visible + .buton-meniu {
+    outline: 3px solid var(--spuma);
+    outline-offset: 3px;
+  }
+  .comutator-meniu:checked + .buton-meniu {
+    background: rgb(251 252 251 / 0.12);
+  }
+
+  .meniu-lista {
+    display: none;
+    flex-basis: 100%;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem 0 1.25rem;
+  }
+  .comutator-meniu:checked ~ .meniu-lista {
+    display: flex;
+  }
+  .meniu-cos {
+    margin-left: 0;
+  }
+
+  .meniu-lista > li > a {
+    height: auto;
+    padding: 0.7rem 0;
+    font-size: 1.1rem;
+  }
+  .meniu-lista > li > a.activ::after {
+    left: -0.9rem;
+    bottom: auto;
+    top: 50%;
+    margin: -3.5px 0 0;
+  }
+  .are-submeniu > a::before {
+    display: none;
+  }
+
+  /* Submenus are always open here, as indented lists under their entry. */
+  .submeniu {
+    position: static;
+    min-width: 0;
+    margin: 0 0 0.5rem 0.2rem;
+    padding: 0 0 0 0.8rem;
+    border-left: 1px solid rgb(251 252 251 / 0.2);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: none;
+  }
+  .submeniu a {
+    padding: 0.45rem 0.6rem;
+    color: rgb(251 252 251 / 0.85);
+  }
+}

@@ -1,0 +1,32 @@
+{% extends "instruments/baza.html" %}
+{% load static %}
+
+{% block titlu %}About | Resonance{% endblock %}
+{% block descriere %}Who runs Resonance, what happens to an instrument in our workshop, and where to find us.{% endblock %}
+
+{% block continut %}
+<h1>About Resonance</h1>
+
+{# The menu's About submenu links straight to these sections, through their ids. #}
+<section id="poveste" class="sectiune">
+  <h2>Our story</h2>
+  <p>Resonance started in {{ companie.founded }} as a repair bench in a Bucharest flat, run by two musicians who were tired of new guitars arriving with high strings and sharp fret ends.</p>
+  <p>The repairs turned into a small shop, and the shop into this site. We still sell the way we started: every instrument goes through the workshop before it's packed.</p>
+</section>
+
+<section id="atelier" class="sectiune">
+  <h2>The workshop</h2>
+  <p>Guitars and basses get new strings, a neck adjustment, string height and intonation set, and their frets checked along the whole neck. Keyboards and electronic kits are switched on and tested on every key, pad and output.</p>
+  <figure class="figuri-mod">
+    <img src="{% static 'imagini/chladni-2-5.svg' %}" width="300" height="300" alt="A simple figure of a few curved lines">
+    <img src="{% static 'imagini/chladni-3-7.svg' %}" width="300" height="300" alt="A figure of four loops and a cross">
+    <img src="{% static 'imagini/chladni-4-9.svg' %}" width="300" height="300" alt="A dense figure of many small loops">
+    <figcaption>The same plate at three resonances, from low to high. The higher the frequency, the finer the figure. Luthiers use the same sand trick to check guitar tops and violin plates while they carve them.</figcaption>
+  </figure>
+</section>
+
+<section id="vizita" class="sectiune">
+  <h2>Visit us</h2>
+  <p>The workshop and showroom are at {{ companie.address }}, open {{ companie.opening_hours }}. Call <a href="tel:{{ companie.phone|cut:' ' }}">{{ companie.phone }}</a> if you want to try a particular instrument, and we'll have it tuned and waiting.</p>
+</section>
+{% endblock %}

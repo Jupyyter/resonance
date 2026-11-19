@@ -1,0 +1,663 @@
+/* Resonance: everything except the menu (that's nav.css).
+   Colours come from the instruments themselves: a rosewood fretboard, nickel hardware,
+   mother-of-pearl inlays, a vintage seafoam finish, and the sand of a Chladni plate. */
+
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("../fonturi/big-shoulders-display-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+}
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("../fonturi/big-shoulders-display-latin-ext-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20AB, U+20AD-20C0, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Karla";
+  src: url("../fonturi/karla-latin-wght-normal.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+}
+@font-face {
+  font-family: "Karla";
+  src: url("../fonturi/karla-latin-ext-wght-normal.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20AB, U+20AD-20C0, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --palisandru: #2b1b21;       /* rosewood: menu, footer, the plate in the pictures */
+  --palisandru-deschis: #3d2a31;
+  --nichel: #e9edec;           /* nickel: page background */
+  --sidef: #fbfcfb;            /* mother-of-pearl: raised surfaces */
+  --spuma: #8cc7b6;            /* seafoam finish: accent on dark backgrounds */
+  --spuma-inchis: #2d6b5d;     /* the same green, dark enough for links on light backgrounds */
+  --nisip: #e8d5a9;            /* Chladni sand */
+  --cerneala: #2b1b21;         /* body text */
+  --cerneala-slaba: #5e4f55;   /* secondary text */
+  --linie: #cdd4d2;            /* borders on light backgrounds */
+  --atentie: #8a5a12;
+  --eroare: #9b2c2c;
+
+  --font-titlu: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-text: "Karla", "Segoe UI", system-ui, sans-serif;
+
+  /* Type scale: each step is 4:3 larger, the ratio of a perfect fourth. */
+  --pas-1: 1.333rem;
+  --pas-2: 1.777rem;
+  --pas-3: 2.369rem;
+  --pas-4: 3.157rem;
+  --pas-5: 4.209rem;
+  --pas-6: 5.61rem;
+
+  --latime: 72rem;
+  --margine: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 106.25%; /* 17px when the browser's default is 16px */
+  scroll-padding-top: 5rem; /* so #anchors don't land under the sticky menu */
+}
+
+body {
+  margin: 0;
+  background: var(--nichel);
+  color: var(--cerneala);
+  font-family: var(--font-text);
+  font-weight: 400;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: var(--spuma-inchis);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+a:hover {
+  text-decoration-thickness: 2px;
+}
+:focus-visible {
+  outline: 3px solid var(--spuma-inchis);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+h1,
+h2 {
+  font-family: var(--font-titlu);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0.005em;
+  margin: 0 0 0.5em;
+  text-wrap: balance;
+}
+h1 {
+  font-size: var(--pas-5);
+}
+h2 {
+  font-size: var(--pas-3);
+  font-weight: 750;
+}
+h3 {
+  font-size: var(--pas-1);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 0.35em;
+}
+p {
+  margin: 0 0 1em;
+  max-width: 68ch;
+}
+
+.introducere {
+  font-size: var(--pas-1);
+  line-height: 1.5;
+  color: var(--cerneala-slaba);
+  max-width: 40em;
+}
+
+.sari-la-continut {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 20;
+  padding: 0.5rem 1rem;
+  background: var(--sidef);
+  color: var(--cerneala);
+}
+.sari-la-continut:focus {
+  top: 1rem;
+}
+
+/* ---------- Page frame ---------- */
+
+.continut {
+  flex: 1;
+  width: 100%;
+  max-width: var(--latime);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) var(--margine) 5rem;
+}
+
+.sectiune {
+  margin-top: clamp(3rem, 7vw, 5.5rem);
+}
+h1 + .sectiune {
+  margin-top: 2rem;
+}
+
+.buton {
+  display: inline-block;
+  padding: 0.8rem 1.4rem;
+  background: var(--palisandru);
+  color: var(--sidef);
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 999px;
+}
+.buton:hover {
+  background: var(--spuma-inchis);
+}
+
+/* ---------- Home: hero ---------- */
+
+.erou {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+}
+.erou h1 {
+  font-size: clamp(var(--pas-5), 8.5vw, var(--pas-6));
+  font-weight: 850;
+  line-height: 0.88;
+  margin-bottom: 0.35em;
+}
+.erou .introducere {
+  font-size: 1.1rem;
+  max-width: 36em;
+}
+.erou-figura {
+  margin: 0;
+}
+.erou-figura img {
+  width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 1.5rem 3rem -1.5rem rgb(43 27 33 / 0.55);
+  /* The one moment of motion on the site: the sand settles into its figure as the page opens. */
+  animation: nisip-asezat 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.erou-figura figcaption,
+.figuri-mod figcaption {
+  margin-top: 0.85rem;
+  font-size: 0.9rem;
+  color: var(--cerneala-slaba);
+  max-width: 34em;
+}
+@keyframes nisip-asezat {
+  from {
+    filter: blur(9px) contrast(0.6);
+    opacity: 0.35;
+    transform: scale(0.985);
+  }
+  to {
+    filter: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Home: categories and steps ---------- */
+
+.categorii {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 0 2.5rem;
+}
+.categorii li {
+  border-top: 2px solid var(--palisandru);
+  padding: 1rem 0 1.5rem;
+}
+.categorii p {
+  color: var(--cerneala-slaba);
+  margin: 0;
+}
+
+.sectiune-doua-coloane {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 1rem 4rem;
+  align-items: start;
+}
+
+/* A real sequence, so the steps are numbered. */
+.pasi {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: pas;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 2rem 2.5rem;
+}
+.pasi li {
+  counter-increment: pas;
+}
+.pasi li::before {
+  content: counter(pas);
+  display: block;
+  font-family: var(--font-titlu);
+  font-size: var(--pas-4);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--spuma-inchis);
+  margin-bottom: 0.4rem;
+}
+.pasi p {
+  color: var(--cerneala-slaba);
+  margin: 0;
+}
+
+/* ---------- About ---------- */
+
+.figuri-mod {
+  margin: 2rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  max-width: 52rem;
+}
+.figuri-mod img {
+  border-radius: 4px;
+}
+.figuri-mod figcaption {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+}
+
+/* ---------- Shop history: a timeline ---------- */
+
+.cronologie {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  max-width: 48rem;
+}
+.cronologie li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--linie);
+}
+.cronologie .an {
+  font-family: var(--font-titlu);
+  font-size: var(--pas-3);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--spuma-inchis);
+}
+.cronologie p {
+  margin: 0.2rem 0 0;
+}
+
+/* ---------- Tables ---------- */
+
+.tabel-derulant {
+  overflow-x: auto;
+  background: var(--sidef);
+  border-radius: 6px;
+  border: 1px solid var(--linie);
+}
+.tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.tabel th,
+.tabel td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--linie);
+}
+.tabel thead th {
+  font-weight: 700;
+  color: var(--cerneala-slaba);
+  border-bottom: 2px solid var(--palisandru);
+  white-space: nowrap;
+}
+.tabel tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.tabel .numar {
+  text-align: right;
+  white-space: nowrap;
+}
+.tabel-jurnal {
+  min-width: 48rem; /* on a phone the table scrolls sideways instead of squeezing every column */
+}
+.tabel-jurnal td {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Questions ---------- */
+
+.intrebari {
+  margin-top: 2rem;
+  max-width: 48rem;
+  border-top: 2px solid var(--palisandru);
+}
+.intrebari details {
+  border-bottom: 1px solid var(--linie);
+}
+.intrebari summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 0;
+  font-size: var(--pas-1);
+  font-weight: 700;
+  line-height: 1.3;
+}
+.intrebari summary::-webkit-details-marker {
+  display: none;
+}
+.intrebari summary::after {
+  content: "+";
+  font-family: var(--font-titlu);
+  font-size: var(--pas-2);
+  line-height: 0.8;
+  color: var(--spuma-inchis);
+  transition: transform 0.2s ease;
+}
+.intrebari details[open] summary::after {
+  transform: rotate(45deg);
+}
+.intrebari details p {
+  margin: 0 0 1.25rem;
+}
+
+/* ---------- In lucru ---------- */
+
+.in-lucru {
+  max-width: 40rem;
+  padding: clamp(1rem, 6vw, 4rem) 0;
+}
+
+/* ---------- Visit log, server info, one visit ---------- */
+
+.ajutor {
+  margin: 1.5rem 0;
+  max-width: 52rem;
+  font-size: 0.95rem;
+  color: var(--cerneala-slaba);
+}
+details.ajutor {
+  background: var(--sidef);
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  padding: 0.25rem 1.25rem;
+}
+details.ajutor summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--cerneala);
+  padding: 0.6rem 0;
+}
+details.ajutor dl {
+  margin: 0.25rem 0 1rem;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.4rem 1.5rem;
+}
+details.ajutor dd {
+  margin: 0;
+}
+
+.mesaj {
+  max-width: 52rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--atentie);
+  background: var(--sidef);
+  color: var(--cerneala);
+}
+.mesaj-eroare {
+  border-left-color: var(--eroare);
+}
+
+.parametri {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.parametri li {
+  background: var(--sidef);
+  border: 1px solid var(--linie);
+  border-radius: 999px;
+  padding: 0.2rem 0.9rem 0.2rem 0.3rem;
+}
+.parametru-nume {
+  display: inline-block;
+  background: var(--palisandru);
+  color: var(--sidef);
+  border-radius: 999px;
+  padding: 0 0.6rem;
+  margin-right: 0.35rem;
+  font-weight: 700;
+}
+
+.jurnal {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--palisandru);
+}
+.jurnal li {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) auto auto;
+  gap: 0.25rem 1.5rem;
+  align-items: baseline;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--linie);
+}
+.jurnal-id {
+  font-weight: 700;
+}
+.jurnal-pagina {
+  overflow-wrap: anywhere;
+}
+.jurnal time,
+.jurnal-ip {
+  color: var(--cerneala-slaba);
+  font-size: 0.92rem;
+}
+
+.date-accesari {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  columns: 2 22rem;
+}
+.date-accesari a {
+  display: inline-block;
+  min-width: 2.5rem;
+  font-weight: 700;
+}
+
+.extreme,
+.detalii {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem 2rem;
+  margin: 0;
+  max-width: 52rem;
+}
+.sectiune .extreme {
+  margin-top: 1.5rem;
+}
+.extreme dt,
+.detalii dt {
+  font-weight: 700;
+}
+.extreme dd,
+.detalii dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Footer ---------- */
+
+.subsol {
+  background: var(--palisandru);
+  color: var(--nichel);
+  font-size: 0.95rem;
+}
+.subsol a {
+  color: var(--spuma);
+}
+.subsol :focus-visible {
+  outline-color: var(--spuma);
+}
+.subsol h2 {
+  font-family: var(--font-text);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--nisip);
+  margin: 0 0 0.6rem;
+}
+.subsol address {
+  font-style: normal;
+  margin-bottom: 0.6rem;
+}
+.subsol ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.subsol li + li {
+  margin-top: 0.3rem;
+}
+.subsol-coloane {
+  max-width: var(--latime);
+  margin: 0 auto;
+  padding: 3rem var(--margine) 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: 2rem 3rem;
+}
+.subsol-nume {
+  font-family: var(--font-titlu);
+  font-size: var(--pas-3);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--nisip);
+  margin-bottom: 0.6rem;
+}
+.subsol-jos {
+  /* the line on top spans the text column only, like the columns above it */
+  width: calc(100% - 2 * var(--margine));
+  max-width: calc(var(--latime) - 2 * var(--margine));
+  margin: 0 auto;
+  padding: 1.1rem 0 1.5rem;
+  border-top: 1px solid rgb(233 237 236 / 0.15);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+  color: rgb(233 237 236 / 0.75);
+}
+.subsol-jos p {
+  margin: 0;
+}
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 56rem) {
+  .erou,
+  .sectiune-doua-coloane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .erou-figura {
+    max-width: 30rem;
+  }
+  .jurnal li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .subsol-coloane {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .subsol-firma {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 34rem) {
+  h1 {
+    font-size: var(--pas-4);
+  }
+  .figuri-mod {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .cronologie li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+  details.ajutor dl,
+  .extreme,
+  .detalii {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detalii dd,
+  .extreme dd {
+    margin-bottom: 0.5rem;
+  }
+  .subsol-coloane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

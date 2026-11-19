@@ -1,0 +1,101 @@
+{% extends "instruments/baza.html" %}
+
+{% block limba %}ro{% endblock %}
+{% block titlu %}Jurnalul accesărilor{% endblock %}
+
+{% block continut %}
+{% url 'instruments:log' as adresa_log %}{# saves the address in a variable, for the examples below #}
+<h1>Jurnalul accesărilor</h1>
+<p class="introducere">Toate accesările paginilor magazinului de la pornirea serverului, în ordinea în care au avut loc.</p>
+
+<details class="ajutor">
+  <summary>Parametrii paginii</summary>
+  <dl>
+    <dt><a href="{{ adresa_log }}?ultimele=5">ultimele=5</a></dt>
+    <dd>doar ultimele 5 accesări</dd>
+    <dt><a href="{{ adresa_log }}?iduri=1,3&amp;iduri=1&amp;dubluri=true">iduri=1,3&amp;iduri=1&amp;dubluri=true</a></dt>
+    <dd>doar accesările cu aceste id-uri; cu dubluri=true, un id cerut de mai multe ori apare de fiecare dată (implicit dubluri=false)</dd>
+    <dt><a href="{{ adresa_log }}?tabel=tot">tabel=tot</a>, <a href="{{ adresa_log }}?tabel=id,pagina,data">tabel=id,pagina,data</a></dt>
+    <dd>un tabel cu toate coloanele, sau doar cu cele date: id, ip_client, url, pagina, data, parametri</dd>
+    <dt><a href="{{ adresa_log }}?accesari=nr">accesari=nr</a>, <a href="{{ adresa_log }}?accesari=detalii">accesari=detalii</a></dt>
+    <dd>numărul total de accesări, sau data și ora fiecăreia</dd>
+  </dl>
+  <p>Se pot combina: <a href="{{ adresa_log }}?ultimele=3&amp;tabel=tot&amp;accesari=nr">ultimele=3&amp;tabel=tot&amp;accesari=nr</a>.</p>
+</details>
+
+{% for tip, text in mesaje %}
+  <p class="mesaj mesaj-{{ tip }}">{{ text }}</p>
+{% endfor %}
+
+<section class="sectiune">
+  <h2>Parametri</h2>
+  {% if parametri %}
+    <p>Pagina a primit {{ numar_parametri }}: {% for nume, valoare in parametri %}{{ nume }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+    <ul class="parametri">
+      {% for nume, valoare in parametri %}
+        <li><span class="parametru-nume">{{ nume }}</span> {{ valoare }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Pagina a primit 0 parametri, așa că sunt afișate toate accesările.</p>
+  {% endif %}
+</section>
+
+<section class="sectiune">
+  <h2>Accesări</h2>
+  {% if tabel %}
+    <div class="tabel-derulant">
+      <table class="tabel tabel-jurnal">
+        <thead>
+          <tr>{% for titlu in tabel.antet %}<th scope="col">{{ titlu }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for rand in tabel.randuri %}
+            <tr>{% for celula in rand %}<td>{{ celula }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <ol class="jurnal">
+      {% for a in selectie %}
+        <li>
+          <a class="jurnal-id" href="{% url 'instruments:accesare' id=a.id %}">Accesarea {{ a.id }}</a>
+          <span class="jurnal-pagina">{{ a.pagina }}</span>
+          <time datetime="{{ a.data|date:'c' }}">{{ a.data_text }}</time>
+          <span class="jurnal-ip">IP {{ a.ip_client|default:"necunoscut" }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+  {% if not selectie %}<p>Nicio accesare de afișat.</p>{% endif %}
+  {% if mesaj_final %}<p class="mesaj mesaj-eroare">{{ mesaj_final }}</p>{% endif %}
+
+  {# Right under the list or the table, as the lab asks. #}
+  <dl class="extreme">
+    <dt>Pagina cea mai puțin accesată ({{ vizite_min }})</dt>
+    <dd>{{ pagini_min|join:", " }}</dd>
+    <dt>Pagina cea mai accesată ({{ vizite_max }})</dt>
+    <dd>{{ pagini_max|join:", " }}</dd>
+  </dl>
+</section>
+
+{% if total %}
+<section class="sectiune">
+  <h2>Număr de accesări</h2>
+  <p>Paginile magazinului au fost accesate de {{ total }} de la pornirea serverului.</p>
+</section>
+{% endif %}
+
+{% if date %}
+<section class="sectiune">
+  <h2>Datele accesărilor</h2>
+  <ul class="date-accesari">
+    {% for id, data in date %}
+      <li><a href="{% url 'instruments:accesare' id=id %}">{{ id }}</a> {{ data }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% endblock %}

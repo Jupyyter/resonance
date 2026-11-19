@@ -1,0 +1,33 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Questions | Resonance{% endblock %}
+{% block descriere %}Returns, shipping, setups and trying instruments at Resonance.{% endblock %}
+
+{% block continut %}
+<h1>Questions</h1>
+<p class="introducere">If yours isn't here, call or email us. The details are at the bottom of every page.</p>
+
+{# <details> opens and closes on its own, without JavaScript. #}
+<div class="intrebari">
+  <details>
+    <summary>Can I return an instrument?</summary>
+    <p>Yes, within 14 days of delivery, in the condition and case it arrived in. If it arrived faulty, we pay for the return shipping.</p>
+  </details>
+  <details>
+    <summary>What does "set up" mean?</summary>
+    <p>Adjusting an instrument so it plays well: the curve of the neck, the height of the strings, the intonation, and the frets and electronics checked. Factory settings are a starting point, so we finish the job before it ships.</p>
+  </details>
+  <details>
+    <summary>Can I try an instrument before buying it?</summary>
+    <p>Yes, in the showroom during opening hours. Call ahead for a particular model and we'll have it tuned and waiting.</p>
+  </details>
+  <details>
+    <summary>Do you ship outside Romania?</summary>
+    <p>We ship across the European Union. The cost is shown before you pay.</p>
+  </details>
+  <details>
+    <summary>Do you buy used instruments?</summary>
+    <p>We take trade-ins after a look in the workshop. Bring the instrument in and we'll make an offer the same day.</p>
+  </details>
+</div>
+{% endblock %}
