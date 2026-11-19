@@ -1,14 +1,22 @@
 from collections import Counter
+from datetime import date
 
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import urlencode
 
 from . import accesari as jurnal
 from .accesari import COLOANE, cate
-from .models import Category, Instrument
+from . import contact as mesaje_contact
+from .forms import ContactForm, FiltruInstrumenteForm, InstrumentForm, genereaza_cod
+from .models import Category, Department, Instrument, MessageType
 
 DESCRIERE = (
     "Resonance is an online shop for musical instruments: electric and acoustic guitars, basses, "
@@ -49,15 +57,13 @@ def faq(request):
     return render(request, "instruments/faq.html")
 
 
-# Not built yet: each has its own view, which for now shows in_lucru.html.
-# In later labs these views get their real content (products from the database, the contact form).
 
 
-# ---------- The shop's listings (lab 4) ----------
+# ---------- The shop's listings (labs 4 and 5) ----------
 
 # ?by=... in the address → the field it sorts by. Only these, so nobody can sort by any column.
 SORTARI = {"name": "name", "price": "price", "date": "date_added", "stock": "stock"}
-ETICHETE_SORTARI = {"name": "Name", "price": "Price", "date": "Date added", "stock": "Stock"}
+COLOANE_IMPLICITE = 3
 
 
 def _adresa(request, **schimbari):
@@ -75,46 +81,147 @@ def _adresa(request, **schimbari):
     return "?" + text if text else request.path
 
 
+def _curata_adresa(request, categorie):
+    """Tidies the address a submitted filter form produced, and redirects to the tidy one.
+
+    A form sends every field, also the empty ones (?nume=&pret_min=&...), plus two hidden helpers.
+    This drops what means nothing, and acts on the rest:
+    - resetat: the Reset button. Every filter goes, with an info message.
+    - categorie on a category page: it must be that category. Anything else means it was edited
+      in the browser: an error message, and the page's own category stays.
+    - per_pagina_anterior and pagina_curenta: if the number per page changed while on page 2 or
+      later, the same page number now holds other instruments, so a warning says so.
+    Returns the redirect, or None when the address is already tidy. Messages survive the redirect:
+    the messages framework keeps them until a page shows them.
+    """
+    parametri = request.GET.copy()
+    if "resetat" in parametri:
+        messages.info(request, "Filters cleared: showing every instrument" + (f" in {categorie.name}." if categorie else "."))
+        return redirect(request.path)
+
+    schimbat = False
+    if categorie and "categorie" in parametri:
+        trimisa = parametri.pop("categorie")[-1]
+        schimbat = True
+        if trimisa != categorie.name:
+            messages.error(
+                request,
+                f"The category can't be changed on this page. Still showing {categorie.name}; "
+                "for other categories, use Instrument categories in the menu.",
+            )
+
+    anterior, curenta = parametri.pop("per_pagina_anterior", [""])[-1], parametri.pop("pagina_curenta", [""])[-1]
+    if anterior or curenta:
+        schimbat = True
+        acum = parametri.get("per_pagina") or str(settings.PROD_PER_PAG)
+        if anterior and acum != anterior and curenta.isdigit() and int(curenta) > 1:
+            parametri["page"] = curenta  # stay on the same page number, as the warning says
+            messages.warning(
+                request,
+                f"Now showing {acum} instruments per page instead of {anterior}. On page {curenta}, you may have "
+                "skipped some instruments, or see again some you've already seen.",
+            )
+
+    if parametri.get("by") == "":  # "Newest first": the order (sort) means nothing then
+        parametri.pop("sort", None)
+    for nume in list(parametri):
+        valori = [v for v in parametri.getlist(nume) if v != ""]
+        implicita = {"per_pagina": str(settings.PROD_PER_PAG), "coloane": str(COLOANE_IMPLICITE)}.get(nume)
+        if implicita and valori == [implicita]:
+            valori = []
+        if valori != parametri.getlist(nume):
+            schimbat = True
+            if valori:
+                parametri.setlist(nume, valori)
+            else:
+                del parametri[nume]
+    if not schimbat:
+        return None
+    return redirect(request.path + ("?" + parametri.urlencode() if parametri else ""))
+
+
+def _numara_taguri(qs):
+    """How many instruments have each tag. values_list("tags", flat=True) reads only that column."""
+    return Counter(tag for taguri in qs.values_list("tags", flat=True) for tag in taguri)
+
+
+def _filtreaza(instrumente, date, categorie):
+    """The QuerySet with the form's valid filters applied, and the names of those filters."""
+    stoc_min = settings.STOC_MIN
+    reguli = {
+        "nume": lambda v: Q(name__icontains=v),
+        "descriere": lambda v: Q(description__icontains=v),
+        "pret_min": lambda v: Q(price__gte=v),
+        "pret_max": lambda v: Q(price__lte=v),
+        "brand": lambda v: Q(brand=v),
+        "distribuitor": lambda v: Q(distributor=v),
+        "serviciu": lambda v: Q(services=v),
+        "stare": lambda v: Q(condition=v),
+        "stoc": lambda v: {
+            "disponibil": Q(stock__gte=stoc_min),
+            "limitat": Q(stock__gt=0, stock__lt=stoc_min),
+            "epuizat": Q(stock=0),
+        }[v],
+        "stangaci": lambda v: Q(left_handed=(v == "da")),
+        "greutate_max": lambda v: Q(weight_kg__lte=v),
+        "material": lambda v: Q(materials__contains=[v]),  # PostgreSQL: the array contains this value
+        "adaugat_de_la": lambda v: Q(date_added__date__gte=v),
+        "adaugat_pana_la": lambda v: Q(date_added__date__lte=v),
+        "cu_imagine": lambda v: ~Q(image="") & Q(image__isnull=False),
+        "tag": lambda v: Q(tags__contains=v),  # all the ticked tags
+    }
+    if not categorie:
+        reguli["categorie"] = lambda v: Q(category=v)
+    aplicate = []
+    for camp, regula in reguli.items():
+        valoare = date.get(camp)
+        if valoare not in (None, "", [], False):
+            instrumente = instrumente.filter(regula(valoare))
+            aplicate.append(camp)
+    if "serviciu" in aplicate:
+        instrumente = instrumente.distinct()  # the join on services could repeat an instrument
+    return instrumente, aplicate
+
+
 def _listare(request, instrumente, categorie=None):
-    """Sorting, tag filtering and pagination, shared by /produse and /categorii/<name>.
+    """The listing behind /produse and /categorii/<name>: filters, tags, sorting, pages.
 
     Both pages call it with their own starting QuerySet (all instruments, or one category's)
     and render the same template, so the rules live in one place.
     """
-    mesaje = []
+    raspuns = _curata_adresa(request, categorie)
+    if raspuns:
+        return raspuns
 
-    # Tags: ?tag=vintage&tag=stage keeps only instruments that have ALL of them.
-    # __contains on an ArrayField is PostgreSQL's @> operator: "the array contains these values".
-    active = list(dict.fromkeys(t.strip().lower() for t in request.GET.getlist("tag") if t.strip()))
-    toate = instrumente  # this page's instruments before the tags: all of them, or one category's
-    if active:
-        instrumente = instrumente.filter(tags__contains=active)
+    toate = instrumente
+    taguri_pagina = _numara_taguri(toate)
+    materiale = sorted({m for lista in toate.values_list("materials", flat=True) for m in lista})
+    date_form = request.GET.copy()
+    # A form filled in from the address shows what the address says, not the fields' initial values,
+    # so the defaults the tidy address leaves out are put back; otherwise a <select> with nothing
+    # chosen would show its first option (1 column) while the page shows 3.
+    date_form.setdefault("per_pagina", str(settings.PROD_PER_PAG))
+    date_form.setdefault("coloane", str(COLOANE_IMPLICITE))
+    if categorie:
+        # the address doesn't carry the category (the page's own address says it), but the
+        # hidden field must, so the form is filled in with it
+        date_form["categorie"] = categorie.name
+    form = FiltruInstrumenteForm(
+        date_form,
+        categorie=categorie,
+        taguri=sorted(taguri_pagina, key=lambda t: (-taguri_pagina[t], t)),
+        materiale=materiale,
+    )
+    form.is_valid()  # fills form.cleaned_data with the fields that passed, form.errors with the rest
+    date = form.cleaned_data
+    if form.errors:
+        messages.error(request, "Some filters couldn't be used. The filter panel says why, next to each one.")
 
-    # The filter panel's tags. Always the same list: every tag of this page's instruments, most
-    # common first, so ticking one never makes others disappear or move. The number next to each:
-    # how many of the instruments shown now have it, which is also how many would stay if you
-    # ticked it too (0: none would). values_list("tags", flat=True) reads only that column.
-    def numara(qs):
-        return Counter(tag for taguri in qs.values_list("tags", flat=True) for tag in taguri)
+    instrumente, aplicate = _filtreaza(toate, date, categorie)
+    active = date.get("tag", [])
 
-    in_pagina = numara(toate)
-    acum = numara(instrumente) if active else in_pagina
-    ordine = [tag for tag, _ in sorted(in_pagina.items(), key=lambda p: (-p[1], p[0]))]
-    ordine += [tag for tag in active if tag not in in_pagina]  # a tag from the address that this page doesn't have
-    taguri_filtru = [(tag, acum.get(tag, 0), tag in active) for tag in ordine]
-    restul = taguri_filtru[12:]
-
-    # Sorting: ?by=price&sort=d. Either one alone uses a default for the other.
-    # An empty by= is the panel's "Newest first", which ignores sort=.
-    dupa, sens = request.GET.get("by") or None, request.GET.get("sort") or None
-    if request.GET.get("by") == "":
-        sens = None
-    if dupa is not None and dupa not in SORTARI:
-        mesaje.append(f"Instruments can be sorted by {', '.join(SORTARI)}, not by \u201c{dupa}\u201d.")
-        dupa = None
-    if sens is not None and sens not in ("a", "d"):
-        mesaje.append(f"The order is a (ascending) or d (descending), not \u201c{sens}\u201d.")
-        sens = None
+    # Sorting: ?by=price&sort=d. sort alone sorts by name; by alone sorts ascending.
+    dupa, sens = date.get("by") or None, date.get("sort") or None
     if dupa or sens:
         dupa, sens = dupa or "name", sens or "a"
         camp = SORTARI[dupa]
@@ -123,12 +230,26 @@ def _listare(request, instrumente, categorie=None):
     else:
         instrumente = instrumente.order_by("-date_added", "id")  # newest first
 
+    # The panel's tags: always the same list (this page's tags, most common first), each with how
+    # many of the instruments shown now have it, which is also how many would stay if you ticked it.
+    acum = _numara_taguri(instrumente) if aplicate else taguri_pagina
+    taguri_filtru = [(tag, acum.get(tag, 0), tag in active) for tag, _ in form.fields["tag"].choices]
+    restul = taguri_filtru[12:]
+
     # Pagination, on the sorted and filtered QuerySet. get_page() turns a missing, wrong or
     # too large ?page= into the first or last page instead of an error.
-    paginator = Paginator(instrumente, settings.PROD_PER_PAG)
+    per_pagina = date.get("per_pagina") or settings.PROD_PER_PAG
+    paginator = Paginator(instrumente, per_pagina)
     pagina = paginator.get_page(request.GET.get("page"))
 
-    # The links for tags. Clicking a tag adds it to the active ones and goes back to page 1.
+    if aplicate:
+        etichete = ", ".join(str(form.fields[c].label).lower() for c in aplicate)
+        # only shown while developing (settings: MESSAGE_LEVEL is DEBUG when DEBUG is on)
+        messages.debug(request, f"Filters applied: {etichete}. {paginator.count} of {toate.count()} instruments match.")
+        if not paginator.count:
+            messages.warning(request, "No instruments match all these filters. Try a wider price range, or untick a tag.")
+
+    # The links for tags on the cards. Clicking one adds it to the ticked ones and goes back to page 1.
     for instrument in pagina:
         instrument.linkuri_taguri = [
             (tag, _adresa(request, tag=active if tag in active else active + [tag], page=None), tag in active)
@@ -136,22 +257,32 @@ def _listare(request, instrumente, categorie=None):
         ]
     taguri_active = [(tag, _adresa(request, tag=[t for t in active if t != tag], page=None)) for tag in active]
 
-    return render(request, "instruments/produse.html", {
+    context = {
         "categorie": categorie,
+        "form": form,
         "pagina": pagina,
         "taguri_active": taguri_active,
         "fara_taguri": _adresa(request, tag=None, page=None),
         "taguri_principale": taguri_filtru[:12],
         "taguri_restul": restul,
-        # the "more tags" part starts open if one of its tags is ticked
         "restul_deschis": any(bifat for _, _, bifat in restul),
-        "numar_filtre": len(active),
-        "dupa": dupa or "",
-        "sens": sens or "",
-        "sortari": ETICHETE_SORTARI,
-        "mesaje": mesaje,
+        # "More filters" starts open when one of its fields is in use or has an error
+        "detalii_deschise": any(c in aplicate or c in form.errors for c in CAMPURI_DETALII),
+        "numar_filtre": len(aplicate),
+        "per_pagina": per_pagina,
+        "coloane": date.get("coloane") or COLOANE_IMPLICITE,
         "stoc_min": settings.STOC_MIN,
-    })
+    }
+    # The filters' JavaScript asks for only the part of the page that changes (header X-Partial).
+    # "produse.html#vitrina" renders only the {% partialdef vitrina %} block of the template.
+    if request.headers.get("X-Partial") == "vitrina":
+        return render(request, "instruments/produse.html#vitrina", context)
+    return render(request, "instruments/produse.html", context)
+
+
+# The less used filters, grouped in the panel under "More filters"
+CAMPURI_DETALII = ["descriere", "distribuitor", "serviciu", "stoc", "stangaci", "greutate_max", "material",
+                   "adaugat_de_la", "adaugat_pana_la", "cu_imagine"]
 
 
 def _instrumente():
@@ -159,29 +290,18 @@ def _instrumente():
     return Instrument.objects.select_related("category", "brand")
 
 
-def _fara_sortare_goala(request):
-    """The panel's "Newest first" sends an empty by= (and a sort= that means nothing then).
-    Returns a redirect to the same page without them, so addresses stay short, or None."""
-    if request.GET.get("by") != "":
-        return None
-    parametri = request.GET.copy()
-    for nume in ("by", "sort", "page"):
-        parametri.pop(nume, None)
-    return redirect(request.path + ("?" + parametri.urlencode() if parametri else ""))
-
-
 def produse(request):
     """/produse: every instrument, whatever its category."""
-    return _fara_sortare_goala(request) or _listare(request, _instrumente())
+    return _listare(request, _instrumente())
 
 
 def categorie(request, nume):
-    """/categorii/<name>: one category's instruments, with the same sorting, filters and pages."""
+    """/categorii/<name>: one category's instruments, with the same filters, sorting and pages."""
     try:
         gasita = Category.objects.get(name=nume)
     except Category.DoesNotExist:
         return _negasit(request, "No such category", f"The shop has no category called \u201c{nume}\u201d.")
-    return _fara_sortare_goala(request) or _listare(request, _instrumente().filter(category=gasita), categorie=gasita)
+    return _listare(request, _instrumente().filter(category=gasita), categorie=gasita)
 
 
 def produs(request, id):
@@ -218,11 +338,104 @@ def _negasit(request, titlu, text):
 
 
 def contact(request):
-    return render(request, "instruments/in_lucru.html", {"pagina": "Contact"})
+    """/contact: the contact form. A valid message is saved as a JSON file (contact.py), not in the database."""
+    if request.method == "POST":
+        # request.FILES: the uploaded images arrive apart from the text fields
+        form = ContactForm(request.POST, request.FILES)
+        if form.is_valid():
+            cale = mesaje_contact.salveaza(form.cleaned_data, request.ip_client)
+            tip, departament = form.cleaned_data["tip_mesaj"], form.cleaned_data["departament"]
+            messages.success(
+                request,
+                f"Thank you, {form.cleaned_data['nume']}. Your {tip.name.lower()} went to {departament.name}; "
+                f"expect an answer within {form.cleaned_data['minim_zile_asteptare']} days.",
+            )
+            messages.debug(request, f"Saved as {cale.relative_to(mesaje_contact.DOSAR.parent)}.")
+            # Post/Redirect/Get: after a POST, redirect, so reloading the page doesn't send it twice
+            return redirect("instruments:contact")
+        messages.error(request, "The message wasn't sent. The notes next to the fields say what to change.")
+    else:
+        form = ContactForm(initial={"cod_cerere": genereaza_cod()})
+    return render(request, "instruments/contact.html", {"form": form, "departamente_pe_tip": form.departamente_pe_tip()})
 
 
+# Not built yet: shows in_lucru.html for now.
 def cos_virtual(request):
     return render(request, "instruments/in_lucru.html", {"pagina": "Cart"})
+
+
+# ---------- The saved contact messages (lab 5) ----------
+# Only for staff: the messages hold personal details. staff_member_required sends anyone else
+# to the admin's login page, and back here after logging in.
+
+
+@staff_member_required
+def mesaje_index(request):
+    """/mesaje: every department, with its number of messages and links to this year and month."""
+    mesaje_contact.pregateste_dosare()
+    azi = timezone.localdate()
+    departamente = [(d, mesaje_contact.numara(d.slug)) for d in Department.objects.all()]
+    return render(request, "instruments/mesaje_index.html", {"departamente": departamente, "azi": azi})
+
+
+def _text_camp(valoare):
+    """A value from a message file as text: a list joined with commas, true/false as yes/no."""
+    if isinstance(valoare, bool):
+        return "yes" if valoare else "no"
+    if isinstance(valoare, list):
+        return ", ".join(map(str, valoare))
+    return "" if valoare is None else str(valoare)
+
+
+@staff_member_required
+def mesaje(request, departament, an, luna=None, zi=None):
+    """/mesaje/<department>/<year>[/<month>[/<day>]]: one department's messages from that date."""
+    try:
+        dep = Department.objects.get(slug=departament)
+    except Department.DoesNotExist:
+        raise Http404("No such department")
+    try:
+        date(an, luna or 1, zi or 1)  # a month 13 or a 31 February stops here
+    except ValueError:
+        return _negasit(request, "No such date", "Check the year, month and day in the address.")
+
+    gasite = mesaje_contact.citeste(dep.slug, an, luna, zi)
+    inceput = date(an, luna or 1, zi or 1)
+    # not strftime("%-d"): that format works on Linux but not on Windows
+    perioada = f"{inceput.day} {inceput:%B %Y}" if zi else f"{inceput:%B %Y}" if luna else str(an)
+    if gasite:
+        messages.info(request, f"{len(gasite)} message{'s' if len(gasite) > 1 else ''} for {dep.name} in {perioada}.")
+    else:
+        messages.info(request, f"No messages for {dep.name} in {perioada}.")
+    tipuri = {t.code: t for t in MessageType.objects.all()}
+    for m in gasite:
+        m["tip"] = tipuri.get(m["date"].get("tip_mesaj"))
+        # every field of the file, whatever they are: the page doesn't need to know their names
+        m["campuri"] = [(cheie, _text_camp(valoare)) for cheie, valoare in m["date"].items() if cheie != "mesaj"]
+    return render(request, "instruments/mesaje.html", {"departament": dep, "perioada": perioada, "mesaje": gasite})
+
+
+# ---------- Adding an instrument (lab 5) ----------
+
+
+@staff_member_required
+def adauga_instrument(request):
+    """/produse/adauga: a ModelForm for a new instrument, whose price is worked out from two inputs."""
+    if request.method == "POST":
+        form = InstrumentForm(request.POST)
+        if form.is_valid():
+            # commit=False: the instrument is built from the form but not saved yet,
+            # so the price (not one of the form's columns) can be set first
+            instrument = form.save(commit=False)
+            instrument.price = form.pret_vanzare()
+            instrument.save()
+            form.save_m2m()  # many-to-many fields need the saved instrument's id
+            messages.success(request, f"{instrument.name} is in the shop, at {instrument.price:,.0f} lei.")
+            return redirect(instrument)  # an object with get_absolute_url() redirects to its page
+        messages.error(request, "The instrument wasn't added. The notes next to the fields say what to change.")
+    else:
+        form = InstrumentForm()
+    return render(request, "instruments/instrument_form.html", {"form": form})
 
 
 def accesare(request, id):

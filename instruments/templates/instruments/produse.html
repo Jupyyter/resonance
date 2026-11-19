@@ -1,15 +1,18 @@
 {% extends "instruments/baza.html" %}
-{% load static %}
+{% load static icoane %}
 {# One template for two pages: every instrument (/produse) and one category's (/categorii/<name>). #}
 {# The view sends "categorie" only for a category page.                                              #}
 
 {% block titlu %}{% if categorie %}{{ categorie.name }}{% else %}All instruments{% endif %} | Resonance{% endblock %}
 {% block descriere %}{% if categorie %}{{ categorie.description }}{% else %}Every instrument in the Resonance shop, set up in our workshop before it ships.{% endif %}{% endblock %}
 
+{# the messages go inside the part that's replaced when filtering, further down #}
+{% block mesaje %}{% endblock %}
+
 {% block continut %}
 {% if categorie %}
   <header class="antet-categorie" style="--culoare-categorie: {{ categorie.color }}">
-    <span class="icon-categorie icon-mare" aria-hidden="true"><i class="{{ categorie.icon_class }}"></i></span>
+    <span class="icon-categorie icon-mare" aria-hidden="true">{% icoana categorie.icon %}</span>
     <div>
       <h1>{{ categorie.name }}</h1>
       <p class="introducere">{{ categorie.description }}</p>
@@ -19,9 +22,11 @@
   <h1>All instruments</h1>
   <p class="introducere">Every instrument in the shop. Each one goes through the workshop before it ships.</p>
 {% endif %}
+{% if user.is_staff %}<p class="actiune-staff"><a href="{% url 'instruments:adauga_instrument' %}">Add an instrument</a></p>{% endif %}
 
-<div class="vitrina">
-  {# ---------- The filter panel: one form for the tags and the sorting ---------- #}
+{# ---------- Everything below is replaced when the filters change (filtre.js asks for only this part) ---------- #}
+{% partialdef vitrina inline %}
+<div class="vitrina" id="vitrina">
   <aside class="panou-filtre" aria-label="Filters">
     {# on phones the panel folds behind this button, like the menu (a checkbox, no JavaScript) #}
     <input type="checkbox" id="comutator-filtre" class="comutator-filtre">
@@ -29,12 +34,33 @@
       <i class="fa-solid fa-sliders" aria-hidden="true"></i> Filters{% if numar_filtre %} ({{ numar_filtre }}){% endif %}
     </label>
 
-    {# Sent to the page it's on: on a category page, the tags filter within that category. #}
-    <form class="filtre" method="get" action="{{ request.path }}">
+    {# A FiltruInstrumenteForm (forms.py). novalidate: the server checks the values and explains, #}
+    {# in our own words, instead of the browser's built-in bubbles.                                #}
+    <form class="filtre" method="get" action="{{ request.path }}" novalidate>
+      {{ form.non_field_errors }}
+
+      <fieldset>
+        <legend>Find</legend>
+        {% include "instruments/camp.html" with camp=form.nume %}
+        <div class="interval">
+          {% include "instruments/camp.html" with camp=form.pret_min %}
+          {% include "instruments/camp.html" with camp=form.pret_max %}
+        </div>
+        {% if categorie %}
+          {# hidden, read-only, set to this page's category; the server checks it wasn't changed #}
+          {{ form.categorie }}
+        {% else %}
+          {% include "instruments/camp.html" with camp=form.categorie %}
+        {% endif %}
+        {% include "instruments/camp.html" with camp=form.brand %}
+        {% include "instruments/camp.html" with camp=form.stare %}
+      </fieldset>
+
       {% if taguri_principale %}
         <fieldset>
           <legend>Tags</legend>
           <p class="ajutor-filtru">Tick as many as you like. Instruments must have all of them; the numbers show how many would stay.</p>
+          {{ form.tag.errors }}
           <div class="optiuni-taguri">
             {% for tag, numar, bifat in taguri_principale %}
               <label class="optiune-tag{% if not numar %} fara-rezultate{% endif %}"><input type="checkbox" name="tag" value="{{ tag }}"{% if bifat %} checked{% endif %}>{{ tag }} <span class="numar">{{ numar }}</span></label>
@@ -54,44 +80,64 @@
         </fieldset>
       {% endif %}
 
-      <fieldset class="filtre-sortare">
-        <legend>Sort</legend>
-        <label>By
-          <select name="by">
-            <option value=""{% if not dupa %} selected{% endif %}>Newest first</option>
-            {% for valoare, eticheta in sortari.items %}
-              <option value="{{ valoare }}"{% if valoare == dupa %} selected{% endif %}>{{ eticheta }}</option>
-            {% endfor %}
-          </select>
-        </label>
-        <label>Order
-          <select name="sort">
-            <option value="a"{% if sens != "d" %} selected{% endif %}>Ascending</option>
-            <option value="d"{% if sens == "d" %} selected{% endif %}>Descending</option>
-          </select>
-        </label>
+      <details class="mai-multe-filtre"{% if detalii_deschise %} open{% endif %}>
+        <summary>More filters</summary>
+        {% include "instruments/camp.html" with camp=form.descriere %}
+        {% include "instruments/camp.html" with camp=form.stoc %}
+        {% include "instruments/camp.html" with camp=form.stangaci %}
+        {% include "instruments/camp.html" with camp=form.material %}
+        {% include "instruments/camp.html" with camp=form.greutate_max %}
+        <div class="interval">
+          {% include "instruments/camp.html" with camp=form.adaugat_de_la %}
+          {% include "instruments/camp.html" with camp=form.adaugat_pana_la %}
+        </div>
+        {% include "instruments/camp.html" with camp=form.distribuitor %}
+        {% include "instruments/camp.html" with camp=form.serviciu %}
+        {% include "instruments/camp.html" with camp=form.cu_imagine %}
+      </details>
+
+      <fieldset class="filtre-afisare">
+        <legend>Show</legend>
+        {% include "instruments/camp.html" with camp=form.by %}
+        {% include "instruments/camp.html" with camp=form.sort %}
+        {% include "instruments/camp.html" with camp=form.per_pagina %}
+        {% include "instruments/camp.html" with camp=form.coloane %}
       </fieldset>
+
+      {# what the page showed before this submit: the view compares, and warns if paging changed #}
+      <input type="hidden" name="per_pagina_anterior" value="{{ per_pagina }}">
+      <input type="hidden" name="pagina_curenta" value="{{ pagina.number }}">
 
       <div class="filtre-butoane">
         <button type="submit">Apply filters</button>
-        {% if numar_filtre or dupa %}<a href="{{ request.path }}">Reset</a>{% endif %}
+        <a class="link-reset" href="{{ request.path }}?resetat=1" data-filtru data-confirma="confirma-reset">Reset</a>
       </div>
     </form>
+
+    <dialog id="confirma-reset" class="dialog" aria-labelledby="titlu-reset">
+      <form method="dialog">
+        <h2 id="titlu-reset">Clear every filter?</h2>
+        <p>The filters you've set will be lost, and the list goes back to every instrument{% if categorie %} in {{ categorie.name }}{% endif %}.</p>
+        <div class="dialog-butoane">
+          <button value="nu" class="buton-secundar" autofocus>Keep my filters</button>
+          <button value="da">Clear filters</button>
+        </div>
+      </form>
+    </dialog>
   </aside>
 
-  {# ---------- The results ---------- #}
-  <div class="rezultate">
-    {% for mesaj in mesaje %}<p class="mesaj">{{ mesaj }}</p>{% endfor %}
+  <div class="rezultate" aria-live="polite">
+    {% include "instruments/mesaje_site.html" %}
 
     {% if taguri_active %}
       <div class="taguri-active">
         <span>Tagged:</span>
         <ul>
           {% for tag, fara_el in taguri_active %}
-            <li><a class="tag-activ" href="{{ fara_el }}" aria-label="Remove the {{ tag }} filter">{{ tag }} <span aria-hidden="true">&times;</span></a></li>
+            <li><a class="tag-activ" href="{{ fara_el }}" data-filtru aria-label="Remove the {{ tag }} filter">{{ tag }} <span aria-hidden="true">&times;</span></a></li>
           {% endfor %}
         </ul>
-        {% if taguri_active|length > 1 %}<a href="{{ fara_taguri }}">Clear all</a>{% endif %}
+        {% if taguri_active|length > 1 %}<a href="{{ fara_taguri }}" data-filtru>Clear all</a>{% endif %}
       </div>
     {% endif %}
 
@@ -99,20 +145,20 @@
       <p class="numarare">Showing instruments {{ pagina.start_index }} to {{ pagina.end_index }} of {{ pagina.paginator.count }}.</p>
 
       {# Defined once, shown above and below the list. {% querystring %} keeps every parameter #}
-      {# in the address (sorting, tags) and changes only page=.                              #}
+      {# in the address (filters, sorting, tags) and changes only page=.                     #}
       {% partialdef paginare inline %}
       <nav class="paginare" aria-label="Pages">
         {% if pagina.has_previous %}
-          <a href="{% querystring page=pagina.previous_page_number %}" rel="prev"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
+          <a href="{% querystring page=pagina.previous_page_number %}" rel="prev" data-filtru><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</a>
         {% else %}<span class="dezactivat"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Previous</span>{% endif %}
         <span class="pagina-curenta">Page {{ pagina.number }} of {{ pagina.paginator.num_pages }}</span>
         {% if pagina.has_next %}
-          <a href="{% querystring page=pagina.next_page_number %}" rel="next">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+          <a href="{% querystring page=pagina.next_page_number %}" rel="next" data-filtru>Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
         {% else %}<span class="dezactivat">Next <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>{% endif %}
       </nav>
       {% endpartialdef %}
 
-      <ul class="grila-produse">
+      <ul class="grila-produse coloane-{{ coloane }}">
         {% for i in pagina %}
           <li class="card{% if i.limited_stock or i.out_of_stock %} card-stoc-limitat{% endif %}" style="--culoare-categorie: {{ i.category.color }}">
             <a class="card-imagine" href="{{ i.get_absolute_url }}" tabindex="-1" aria-hidden="true">
@@ -121,7 +167,7 @@
             </a>
             <div class="card-corp">
               <a class="categorie-link" href="{{ i.category.get_absolute_url }}">
-                <span class="icon-categorie" aria-hidden="true"><i class="{{ i.category.icon_class }}"></i></span>{{ i.category.name }}
+                <span class="icon-categorie" aria-hidden="true">{% icoana i.category.icon %}</span>{{ i.category.name }}
               </a>
               <h2 class="card-nume"><a href="{{ i.get_absolute_url }}">{{ i.name }}</a></h2>
               <dl class="card-specificatii">
@@ -136,7 +182,7 @@
               {% if i.linkuri_taguri %}
                 <ul class="taguri" aria-label="Tags">
                   {% for tag, adresa, activ in i.linkuri_taguri %}
-                    <li><a href="{{ adresa }}"{% if activ %} class="activ" aria-current="true"{% endif %}>{{ tag }}</a></li>
+                    <li><a href="{{ adresa }}" data-filtru{% if activ %} class="activ" aria-current="true"{% endif %}>{{ tag }}</a></li>
                   {% endfor %}
                 </ul>
               {% endif %}
@@ -147,12 +193,16 @@
 
       {% partial paginare %}
     {% else %}
-      {% if taguri_active %}
-        <p class="gol">No instruments have all these tags. Remove one of them above to see more.</p>
-      {% else %}
-        <p class="gol">There are no instruments {% if categorie %}in this category {% endif %}yet.</p>
-      {% endif %}
+      <p class="gol">
+        {% if numar_filtre %}No instruments match all these filters. Change or remove one of them in the panel.
+        {% else %}There are no instruments {% if categorie %}in this category {% endif %}yet.{% endif %}
+      </p>
     {% endif %}
   </div>
 </div>
+{% endpartialdef %}
+{% endblock %}
+
+{% block scripturi %}
+  <script src="{% static 'js/filtre.js' %}" defer></script>
 {% endblock %}

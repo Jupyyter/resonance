@@ -23,6 +23,8 @@
   </header>
 
   <main id="continut" class="continut">
+    {# messages from the messages framework, shown once on the next page that's displayed #}
+    {% block mesaje %}{% include "instruments/mesaje_site.html" %}{% endblock %}
     {% block continut %}{% endblock %}
   </main>
 
@@ -56,5 +58,6 @@
       <p>Your IP address: {{ request.ip_client|default:"unknown" }}</p>
     </div>
   </footer>
+  {% block scripturi %}{% endblock %}
 </body>
 </html>

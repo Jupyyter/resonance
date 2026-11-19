@@ -1,0 +1,38 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Add an instrument | Resonance{% endblock %}
+
+{% block continut %}
+<h1>Add an instrument</h1>
+<p class="introducere">The selling price is worked out for you: the purchase price plus the markup, rounded to end in 9.</p>
+
+<form class="formular" method="post" novalidate>
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <fieldset>
+    <legend>The instrument</legend>
+    {% include "instruments/camp.html" with camp=form.name %}
+    {% include "instruments/camp.html" with camp=form.description %}
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.category %}
+      {% include "instruments/camp.html" with camp=form.brand %}
+    </div>
+    {% include "instruments/camp.html" with camp=form.tags %}
+  </fieldset>
+  <fieldset>
+    <legend>Stock and price</legend>
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.condition %}
+      {% include "instruments/camp.html" with camp=form.stock %}
+    </div>
+    {% include "instruments/camp.html" with camp=form.distributor %}
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.pret_achizitie %}
+      {% include "instruments/camp.html" with camp=form.adaos %}
+    </div>
+  </fieldset>
+  <div class="formular-butoane">
+    <button type="submit">Add to the shop</button>
+  </div>
+</form>
+{% endblock %}

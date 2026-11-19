@@ -1,0 +1,15 @@
+{# The messages framework's messages: debug, info, success, warning, error, each with its own look. #}
+{# Looping over "messages" also marks them as shown, so each appears only once.                    #}
+{% if messages %}
+<ul class="mesaje-site">
+  {% for m in messages %}
+    <li class="mesaj-site mesaj-{{ m.level_tag }}" role="{% if m.level_tag == 'error' or m.level_tag == 'warning' %}alert{% else %}status{% endif %}">
+      <i class="fa-solid fa-{% if m.level_tag == 'debug' %}bug{% elif m.level_tag == 'info' %}circle-info{% elif m.level_tag == 'success' %}circle-check{% elif m.level_tag == 'warning' %}triangle-exclamation{% else %}circle-xmark{% endif %}" aria-hidden="true"></i>
+      <p>
+        <span class="mesaj-nivel">{% if m.level_tag == 'debug' %}Debug{% elif m.level_tag == 'info' %}Note{% elif m.level_tag == 'success' %}Done{% elif m.level_tag == 'warning' %}Heads up{% else %}Problem{% endif %}</span>
+        {{ m }}
+      </p>
+    </li>
+  {% endfor %}
+</ul>
+{% endif %}

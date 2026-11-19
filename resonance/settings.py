@@ -139,6 +139,11 @@ STATIC_URL = "static/"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Messages (lab 5): debug messages are dropped by default; while developing, show them too.
+from django.contrib.messages import constants as message_constants  # noqa: E402
+
+MESSAGE_LEVEL = message_constants.DEBUG if DEBUG else message_constants.INFO
+
 # The products pages (lab 4)
 STOC_MIN = 3        # fewer than this many in stock: marked as limited stock
 PROD_PER_PAG = 6    # instruments per page in the listings

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static icoane %}
 {# The main menu, included by baza.html. Every address comes from {% url %}, by the page's name. #}
 {# sectiune_activa comes from the "meniu" context processor: it marks where the visitor is.      #}
 <nav class="meniu" aria-label="Main menu">
@@ -20,14 +20,14 @@
       <ul class="submeniu">
         <li>
           <a href="{% url 'instruments:produse' %}">
-            <span class="icon-categorie icon-toate" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>All instruments
+            <span class="icon-categorie icon-toate" aria-hidden="true">{% icoana "table-cells-large" %}</span>All instruments
           </a>
         </li>
         {# Built from the Category table (the "meniu" context processor): only categories with instruments. #}
         {% for c in categorii_meniu %}
           <li>
             <a href="{{ c.get_absolute_url }}" style="--culoare-categorie: {{ c.color }}">
-              <span class="icon-categorie" aria-hidden="true"><i class="{{ c.icon_class }}"></i></span>{{ c.name }}
+              <span class="icon-categorie" aria-hidden="true">{% icoana c.icon %}</span>{{ c.name }}
             </a>
           </li>
         {% endfor %}

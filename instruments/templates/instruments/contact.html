@@ -1,0 +1,75 @@
+{% extends "instruments/baza.html" %}
+{% load static %}
+
+{% block titlu %}Contact | Resonance{% endblock %}
+{% block descriere %}Write to the Resonance shop: questions, appointments for the workshop, complaints and reviews.{% endblock %}
+
+{% block continut %}
+<h1>Contact us</h1>
+<p class="introducere">Questions, workshop appointments, complaints or reviews: we answer every message. Fields marked with * are required.</p>
+
+{# enctype multipart: needed to send files (the images). novalidate: the server checks every #}
+{# value and explains problems in its own words, instead of the browser's built-in bubbles.  #}
+<form class="formular" id="formular-contact" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {# the request code: made by the server, checked when the form comes back #}
+  {{ form.cod_cerere }}
+  {{ form.cod_cerere.errors }}
+  {{ form.non_field_errors }}
+
+  <fieldset>
+    <legend>About you</legend>
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.nume %}
+      {% include "instruments/camp.html" with camp=form.prenume %}
+    </div>
+    <div class="rand-doua">
+      {# the counter is filled in by contact.js as digits are typed #}
+      {% include "instruments/camp.html" with camp=form.cnp extra='<p class="contor-cnp" id="contor-cnp" aria-live="polite"></p>' %}
+      {% include "instruments/camp.html" with camp=form.data_nasterii %}
+    </div>
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.email %}
+      {% include "instruments/camp.html" with camp=form.confirmare_email %}
+    </div>
+    {% include "instruments/camp.html" with camp=form.telefon %}
+  </fieldset>
+
+  <fieldset>
+    <legend>Your message</legend>
+    <div class="rand-doua">
+      {% include "instruments/camp.html" with camp=form.tip_mesaj %}
+      {% include "instruments/camp.html" with camp=form.departament %}
+    </div>
+    {% include "instruments/camp.html" with camp=form.subiect %}
+    {% include "instruments/camp.html" with camp=form.minim_zile_asteptare %}
+    {% include "instruments/camp.html" with camp=form.mesaj %}
+
+    <div class="imagini">
+      <p class="ajutor-camp">Up to 3 images, if they help explain (a photo of the instrument, a receipt).</p>
+      {% include "instruments/camp.html" with camp=form.imagine1 clasa="camp-imagine" %}
+      {% include "instruments/camp.html" with camp=form.imagine2 clasa="camp-imagine" %}
+      {% include "instruments/camp.html" with camp=form.imagine3 clasa="camp-imagine" %}
+      <p class="imagini-maxim" id="imagini-maxim" hidden>That's the most a message can carry: 3 images.</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Before you send</legend>
+    {% include "instruments/camp.html" with camp=form.gdpr %}
+  </fieldset>
+
+  <div class="formular-butoane">
+    {# disabled until the consent box is ticked (contact.js); the server checks the box again #}
+    <button type="submit" id="trimite" disabled>Send message</button>
+    <button type="reset" class="buton-secundar">Clear the form</button>
+  </div>
+</form>
+
+{# the departments of each kind of message, from the database, for contact.js #}
+{{ departamente_pe_tip|json_script:"departamente-pe-tip" }}
+{% endblock %}
+
+{% block scripturi %}
+  <script src="{% static 'js/contact.js' %}" defer></script>
+{% endblock %}

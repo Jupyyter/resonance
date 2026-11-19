@@ -1,0 +1,28 @@
+{% extends "instruments/baza.html" %}
+
+{% block titlu %}Messages | Resonance{% endblock %}
+
+{% block continut %}
+<h1>Messages</h1>
+<p class="introducere">The contact form's messages, by department. Each department has a folder in <code>instruments/Mesaje_nerezolvate/</code>.</p>
+
+<table class="tabel tabel-mesaje">
+  <thead>
+    <tr><th scope="col">Department</th><th scope="col" class="numar">Messages</th><th scope="col">See</th></tr>
+  </thead>
+  <tbody>
+    {% for departament, numar in departamente %}
+      <tr>
+        <th scope="row">{{ departament.name }}</th>
+        <td class="numar">{{ numar }}</td>
+        <td>
+          {# the date in the address: a year, a year and month, or a full day #}
+          <a href="{% url 'instruments:mesaje_departament' departament.slug azi.year %}">{{ azi.year }}</a>,
+          <a href="{% url 'instruments:mesaje_departament' departament.slug azi.year azi.month %}">{{ azi|date:"F Y" }}</a>,
+          <a href="{% url 'instruments:mesaje_departament' departament.slug azi.year azi.month azi.day %}">today</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

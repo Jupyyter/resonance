@@ -9,7 +9,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import Brand, Category, Distributor, Instrument, Recording, Service
+from .models import Brand, Category, Department, Distributor, Instrument, MessageType, Recording, Service
 
 # The admin's own texts. The look (colours, logo) is in templates/admin/base_site.html and css/admin.css.
 admin.site.site_title = "Resonance back office"  # the browser tab
@@ -185,3 +185,37 @@ class RecordingAdmin(MesajeDinModel, admin.ModelAdmin):
     search_fields = ["title", "instrument__name"]
     search_help_text = "Searches recording titles and the names of their instruments."
     autocomplete_fields = ["instrument"]
+
+
+# ---------- Contact (lab 5) ----------
+
+
+@admin.register(Department)
+class DepartmentAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["name", "slug"]
+    search_fields = ["name", "slug"]
+    prepopulated_fields = {"slug": ["name"]}  # the slug is typed for you from the name
+
+
+@admin.register(MessageType)
+class MessageTypeAdmin(MesajeDinModel, admin.ModelAdmin):
+    list_display = ["name", "code", "min_days", "culoare", "lista_departamente"]
+    search_fields = ["name", "code"]
+    list_filter = ["departments"]
+    # the link table: tick which departments may receive this kind of message
+    filter_horizontal = ["departments"]
+
+    @admin.display(description="Colour")
+    def culoare(self, tip):
+        return format_html(
+            '<span style="display:inline-block;width:1em;height:1em;border-radius:50%;background:{};vertical-align:middle"></span> {}',
+            tip.color, tip.color,
+        )
+
+    @admin.display(description="Departments")
+    def lista_departamente(self, tip):
+        return ", ".join(d.name for d in tip.departments.all())
+
+    def get_queryset(self, request):
+        # the departments of every row in one query, instead of one per row
+        return super().get_queryset(request).prefetch_related("departments")

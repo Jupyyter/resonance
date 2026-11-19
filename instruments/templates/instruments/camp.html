@@ -1,0 +1,13 @@
+{# One form field: label, input, help text and errors. Used by every form on the site. #}
+{# {{ camp }} draws the input; Django links it to the help text with aria-describedby.  #}
+<div class="camp camp-{{ camp.name }}{% if camp.field.required %} camp-obligatoriu{% endif %}{% if camp.errors %} camp-cu-eroare{% endif %}{% if clasa %} {{ clasa }}{% endif %}">
+  {% if camp.widget_type == "checkbox" %}
+    <label class="camp-bifa">{{ camp }} {{ camp.label }}</label>
+  {% else %}
+    {{ camp.label_tag }}
+    {{ camp }}
+  {% endif %}
+  {% if extra %}{{ extra }}{% endif %}
+  {% if camp.help_text %}<p class="ajutor-camp" id="{{ camp.auto_id }}_helptext">{{ camp.help_text }}</p>{% endif %}
+  {{ camp.errors }}
+</div>

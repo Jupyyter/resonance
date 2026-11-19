@@ -18,6 +18,8 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
+from .icoane import ALEGERI as ICOANE_CATEGORII
+
 HEX_COLOR = r"^#[0-9A-Fa-f]{6}$"
 
 
@@ -40,8 +42,9 @@ class Category(models.Model):
     )
     icon = models.CharField(
         max_length=40,
+        choices=ICOANE_CATEGORII,  # the icons in icoane.py, so every choice can be drawn
         default="music",
-        help_text="Name of a Font Awesome icon, like guitar, drum or music.",
+        help_text="The icon shown next to the category's name, in a circle of its colour.",
     )
     display_order = models.PositiveSmallIntegerField(
         default=0,
@@ -66,10 +69,6 @@ class Category(models.Model):
     def get_absolute_url(self):
         """The category's own page: /categorii/<name>."""
         return reverse("instruments:categorie", args=[self.name])
-
-    def icon_class(self):
-        """The Font Awesome classes for the icon: "fa-solid fa-guitar"."""
-        return f"fa-solid fa-{self.icon}"
 
 
 class Brand(models.Model):
@@ -351,3 +350,57 @@ class Recording(models.Model):
 
     def __str__(self):
         return f"{self.instrument}: {self.number}. {self.title}"
+
+
+# ---------- The contact form (lab 5) ----------
+
+
+class Department(models.Model):
+    """Who in the shop a contact message goes to. Its slug names its folder in Mesaje_nerezolvate."""
+
+    name = models.CharField(max_length=60, unique=True, error_messages={"unique": "This department already exists."})
+    slug = models.SlugField(
+        max_length=60,
+        unique=True,
+        help_text="Lowercase letters, digits and hyphens. Names the department's message folder and its address in /mesaje.",
+    )
+
+    class Meta:
+        verbose_name = "department"
+        verbose_name_plural = "departments"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class MessageType(models.Model):
+    """A kind of contact message: complaint, question, review, request, appointment.
+
+    departments is a many-to-many relationship, so Django creates the link table
+    (instruments_messagetype_departments) between message types and departments.
+    """
+
+    code = models.SlugField(max_length=20, unique=True, help_text="The value the contact form sends, like review.")
+    name = models.CharField(max_length=40)
+    min_days = models.PositiveSmallIntegerField(
+        help_text="The fewest days a sender may choose to wait for an answer to this kind of message."
+    )
+    color = models.CharField(max_length=7, default="#2D6B5D", help_text="Hex colour that marks these messages in /mesaje.")
+    icon = models.CharField(max_length=40, default="envelope", help_text="Name of a Font Awesome icon, like star.")
+    departments = models.ManyToManyField(Department, related_name="message_types")
+
+    class Meta:
+        verbose_name = "message type"
+        verbose_name_plural = "message types"
+        ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(min_days__gte=1) & Q(min_days__lte=30),
+                name="messagetype_min_days_1_to_30",
+                violation_error_message="The minimum wait is between 1 and 30 days.",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name

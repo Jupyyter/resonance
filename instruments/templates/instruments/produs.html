@@ -1,5 +1,5 @@
 {% extends "instruments/baza.html" %}
-{% load static %}
+{% load static icoane %}
 
 {% block titlu %}{{ instrument.name }} | Resonance{% endblock %}
 {% block descriere %}{{ instrument.description }}{% endblock %}
@@ -19,7 +19,7 @@
 
   <div class="produs-info">
     <a class="categorie-link" href="{{ instrument.category.get_absolute_url }}">
-      <span class="icon-categorie" aria-hidden="true"><i class="{{ instrument.category.icon_class }}"></i></span>{{ instrument.category.name }}
+      <span class="icon-categorie" aria-hidden="true">{% icoana instrument.category.icon %}</span>{{ instrument.category.name }}
     </a>
     <h1>{{ instrument.name }}</h1>
     <p class="pret pret-mare">{{ instrument.price|floatformat:"-2g" }} lei</p>

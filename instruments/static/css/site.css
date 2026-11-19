@@ -44,6 +44,7 @@
   --linie: #cdd4d2;            /* borders on light backgrounds */
   --atentie: #8a5a12;
   --eroare: #9b2c2c;
+  --linie-camp: #76817e;       /* input borders: 3.4:1 against the page, enough to find the field */
 
   --font-titlu: "Big Shoulders Display", "Arial Narrow", sans-serif;
   --font-text: "Karla", "Segoe UI", system-ui, sans-serif;
@@ -64,6 +65,10 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+/* the hidden attribute always hides, even an element whose class sets display (like .camp) */
+[hidden] {
+  display: none !important;
 }
 
 html {
@@ -359,6 +364,7 @@ h1 + .sectiune {
 .tabel .numar {
   text-align: right;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .tabel-jurnal {
   min-width: 48rem; /* on a phone the table scrolls sideways instead of squeezing every column */
@@ -678,13 +684,19 @@ details.ajutor dd {
   color: #fff;
   font-size: 0.75rem;
 }
-/* Font Awesome draws its icons 1/8 of their size high, to line up with text beside them;
-   inside a circle that looks off-centre, so they move back down by the same amount. */
-.icon-categorie i {
-  transform: translateY(0.125em);
+/* The icon is an SVG whose viewBox is cropped to its shape (icoane.py), so the grid
+   centres exactly what you see, on every browser and screen. */
+.icon-categorie .icoana {
+  width: 56%;
+  height: 56%;
+  display: block;
 }
 .icon-mare {
   font-size: 1.6rem;
+}
+.icon-mare .icoana {
+  width: 52%;
+  height: 52%;
 }
 .categorie-link {
   display: inline-flex;
@@ -737,12 +749,28 @@ details.ajutor dd {
   text-decoration: none;
 }
 .tag-activ span {
-  display: inline-grid;
-  place-items: center;
+  position: relative;
   width: 1.3rem;
   height: 1.3rem;
   border-radius: 50%;
   background: rgb(251 252 251 / 0.18);
+  font-size: 0; /* hides the text "×"; the cross is drawn below, so it sits exactly in the middle */
+}
+.tag-activ span::before,
+.tag-activ span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.6rem;
+  height: 2px;
+  margin: -1px 0 0 -0.3rem;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+.tag-activ span::after {
+  transform: rotate(-45deg);
 }
 .tag-activ:hover span {
   background: var(--eroare);
@@ -767,6 +795,8 @@ details.ajutor dd {
   border: 0;
   margin: 0 0 1.5rem;
   padding: 0;
+  display: grid;
+  gap: 0.6rem;
 }
 .filtre legend {
   font-family: var(--font-titlu);
@@ -778,9 +808,10 @@ details.ajutor dd {
 .ajutor-filtru {
   font-size: 0.82rem;
   color: var(--cerneala-slaba);
-  margin: 0 0 0.6rem;
+  margin: 0;
 }
-.numar {
+/* how many instruments a tag would leave (the tables' .numar is a different thing) */
+.optiune-tag .numar {
   font-size: 0.8rem;
   color: var(--cerneala-slaba);
   font-variant-numeric: tabular-nums;
@@ -841,31 +872,6 @@ details.ajutor dd {
   margin-bottom: 0.5rem;
 }
 
-.filtre-sortare {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-}
-.filtre-sortare legend {
-  grid-column: 1 / -1;
-}
-.filtre-sortare label {
-  display: grid;
-  gap: 0.2rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--cerneala-slaba);
-}
-.filtre select {
-  font: inherit;
-  font-size: 0.92rem;
-  width: 100%;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--linie);
-  background: var(--sidef);
-  color: var(--cerneala);
-}
 .filtre-butoane {
   display: flex;
   align-items: center;
@@ -1196,5 +1202,475 @@ details.ajutor dd {
   }
   .paginare {
     font-size: 0.92rem;
+  }
+}
+
+/* =====================================================================================
+   Lab 5
+   ===================================================================================== */
+
+/* ---------- The messages framework: one look per level ---------- */
+/* Each level has its own surface, so a glance tells them apart even before reading:
+   debug is a dashed workshop note, info a plain note with a green edge, success the
+   seafoam finish, warning Chladni sand, error a red frame. The icon and the first word
+   say the same thing for anyone who can't tell the colours apart. */
+.mesaje-site {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.mesaj-site {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+  line-height: 1.45;
+}
+.mesaj-site p {
+  margin: 0;
+}
+.mesaj-site > i {
+  flex: none;
+  width: 1.1em;
+  text-align: center;
+}
+.mesaj-nivel {
+  font-weight: 800;
+  margin-right: 0.3rem;
+}
+.mesaj-debug {
+  border: 1px dashed var(--cerneala-slaba);
+  color: var(--cerneala-slaba);
+  font-size: 0.85rem;
+  padding-block: 0.45rem;
+}
+.mesaj-info {
+  background: var(--sidef);
+  border: 1px solid var(--linie);
+  border-left: 4px solid var(--spuma-inchis);
+}
+.mesaj-info > i {
+  color: var(--spuma-inchis);
+}
+.mesaj-success {
+  background: color-mix(in srgb, var(--spuma) 38%, var(--sidef));
+  color: #1d4a40;
+}
+.mesaj-warning {
+  background: var(--nisip);
+  color: #4a3208;
+}
+.mesaj-warning > i {
+  color: var(--atentie);
+}
+.mesaj-error {
+  background: color-mix(in srgb, var(--eroare) 8%, var(--sidef));
+  border: 2px solid var(--eroare);
+  color: var(--eroare);
+}
+
+/* ---------- Forms ---------- */
+.formular {
+  max-width: 46rem;
+  margin-top: 2rem;
+}
+/* each group is a rule across the page, interrupted by its title */
+.formular fieldset {
+  border: 0;
+  border-top: 2px solid var(--palisandru);
+  margin: 0 0 2.25rem;
+  padding: 0.9rem 0 0;
+  min-width: 0;
+  display: grid;
+  gap: 1.1rem;
+}
+.formular legend {
+  font-family: var(--font-titlu);
+  font-size: var(--pas-2);
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 0.7rem 0 0;
+}
+.camp {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  min-width: 0;
+}
+.camp > label {
+  font-weight: 700;
+}
+.filtre .camp > label {
+  font-size: 0.82rem;
+  color: var(--cerneala-slaba);
+}
+.camp-obligatoriu > label:first-child::after {
+  content: " *";
+  color: var(--eroare);
+}
+.formular :is(input:not([type="checkbox"], [type="file"], [type="hidden"]), select, textarea),
+.filtre :is(input:not([type="checkbox"], [type="hidden"]), select) {
+  font: inherit;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--linie-camp);
+  border-radius: 6px;
+  background: var(--sidef);
+  color: var(--cerneala);
+}
+.filtre :is(input:not([type="checkbox"], [type="hidden"]), select) {
+  font-size: 0.92rem;
+  padding: 0.4rem 0.5rem;
+}
+.formular textarea {
+  resize: vertical;
+  min-height: 9rem;
+  line-height: 1.5;
+}
+.formular input[type="file"] {
+  font: inherit;
+  font-size: 0.9rem;
+}
+.camp-cu-eroare :is(input, select, textarea) {
+  border-color: var(--eroare);
+  box-shadow: inset 0 0 0 1px var(--eroare);
+}
+.ajutor-camp {
+  font-size: 0.85rem;
+  color: var(--cerneala-slaba);
+  margin: 0;
+}
+.filtre .ajutor-camp {
+  font-size: 0.78rem;
+}
+/* Django's list of a field's errors */
+.errorlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--eroare);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+/* errors about several fields together, shown above the form */
+.errorlist.nonfield {
+  margin-bottom: 1.25rem;
+  padding: 0.7rem 1rem;
+  border-left: 4px solid var(--eroare);
+  background: color-mix(in srgb, var(--eroare) 8%, var(--sidef));
+  font-size: 0.95rem;
+}
+.errorlist.nonfield li + li {
+  margin-top: 0.35rem;
+}
+.camp-bifa {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+.camp > .camp-bifa {
+  font-weight: 400;
+}
+.camp-bifa input {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--palisandru);
+}
+.filtre .camp-bifa {
+  font-size: 0.9rem;
+}
+
+/* two fields side by side: first name and last name, minimum and maximum price */
+.rand-doua,
+.interval {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.1rem 1.25rem;
+}
+.interval {
+  gap: 0.6rem;
+}
+/* two calendars don't fit side by side in the panel */
+.interval:has(input[type="date"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.contor-cnp {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--cerneala-slaba);
+  font-variant-numeric: tabular-nums;
+}
+.contor-cnp.complet {
+  color: var(--spuma-inchis);
+  font-weight: 700;
+}
+.imagini {
+  display: grid;
+  gap: 0.8rem;
+}
+.imagini-maxim {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--atentie);
+}
+
+/* buttons: the main action filled, the other outlined */
+.formular-butoane {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+.formular-butoane button,
+.dialog-butoane button {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid var(--palisandru);
+  border-radius: 999px;
+  background: var(--palisandru);
+  color: var(--sidef);
+  cursor: pointer;
+}
+.formular-butoane button:hover,
+.dialog-butoane button:hover {
+  background: var(--spuma-inchis);
+  border-color: var(--spuma-inchis);
+}
+.formular-butoane .buton-secundar,
+.dialog-butoane .buton-secundar {
+  background: transparent;
+  color: var(--palisandru);
+}
+.formular-butoane .buton-secundar:hover,
+.dialog-butoane .buton-secundar:hover {
+  background: var(--sidef);
+  color: var(--palisandru);
+  border-color: var(--palisandru);
+}
+.formular-butoane button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.formular-butoane button:disabled:hover {
+  background: var(--palisandru);
+  border-color: var(--palisandru);
+}
+
+/* ---------- The filter panel's additions ---------- */
+.mai-multe-filtre {
+  margin: 0 0 1.5rem;
+}
+.mai-multe-filtre > summary {
+  cursor: pointer;
+  font-family: var(--font-titlu);
+  font-size: var(--pas-1);
+  font-weight: 800;
+}
+.mai-multe-filtre > * + * {
+  margin-top: 0.6rem;
+}
+.filtre-afisare {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.link-reset {
+  font-weight: 700;
+  color: var(--spuma-inchis);
+}
+.actiune-staff {
+  margin: 0.75rem 0 0;
+  font-weight: 700;
+}
+
+/* the "Clear every filter?" question */
+.dialog {
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 1.5rem 1.6rem 1.4rem;
+  border: 0;
+  border-top: 6px solid var(--palisandru);
+  border-radius: 8px;
+  background: var(--sidef);
+  color: var(--cerneala);
+  box-shadow: 0 1.5rem 3rem rgb(43 27 33 / 0.35);
+}
+.dialog::backdrop {
+  background: rgb(43 27 33 / 0.55);
+}
+.dialog h2 {
+  font-size: var(--pas-2);
+  margin: 0 0 0.5rem;
+}
+.dialog p {
+  margin: 0 0 1.25rem;
+}
+.dialog-butoane {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] {
+    transition: opacity 0.15s ease-out, translate 0.15s ease-out;
+  }
+  @starting-style {
+    .dialog[open] {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+  }
+}
+
+/* ---------- 1, 2 or 3 columns ---------- */
+/* the columns follow the width the list actually has, not the window's: */
+/* the filter panel takes part of the window on a computer and none on a phone */
+.rezultate {
+  container-type: inline-size;
+}
+.grila-produse.coloane-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.grila-produse.coloane-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grila-produse.coloane-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* one column: each card lies on its side, photo on the left */
+.coloane-1 .card {
+  flex-direction: row;
+}
+.coloane-1 .card-imagine {
+  flex: 0 0 clamp(11rem, 36%, 19rem);
+}
+.coloane-1 .card-imagine img {
+  height: 100%;
+  min-height: 12rem;
+  aspect-ratio: auto;
+}
+@container (max-width: 42rem) {
+  .grila-produse.coloane-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width: 28rem) {
+  .grila-produse.coloane-3,
+  .grila-produse.coloane-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coloane-1 .card {
+    flex-direction: column;
+  }
+  .coloane-1 .card-imagine {
+    flex: none;
+  }
+  .coloane-1 .card-imagine img {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+}
+
+/* ---------- The saved contact messages (/mesaje) ---------- */
+.mesaje-primite {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+/* the left edge is the message type's colour, from the database */
+.mesaj-primit {
+  background: var(--sidef);
+  border: 1px solid var(--linie);
+  border-left: 6px solid var(--culoare-tip);
+  border-radius: 4px 8px 8px 4px;
+  padding: 1.1rem 1.4rem 1.2rem;
+}
+/* urgent: framed in red, like an instrument with few left in stock */
+.mesaj-primit.urgent {
+  border: 2px solid var(--eroare);
+  border-left: 6px solid var(--culoare-tip);
+}
+.mesaj-primit header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+}
+.tip-mesaj {
+  font-weight: 700;
+}
+.tip-mesaj i {
+  color: var(--culoare-tip);
+}
+.eticheta-urgent {
+  padding: 0.1rem 0.65rem;
+  border-radius: 999px;
+  background: var(--eroare);
+  color: var(--sidef);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.mesaj-primit time {
+  margin-left: auto;
+  color: var(--cerneala-slaba);
+}
+.mesaj-primit h2 {
+  font-size: var(--pas-2);
+  margin: 0.5rem 0 0.6rem;
+}
+.corp-mesaj p {
+  margin: 0 0 0.6rem;
+  max-width: 65ch;
+}
+.mesaj-primit details {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--linie);
+  padding-top: 0.6rem;
+}
+.mesaj-primit summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--spuma-inchis);
+}
+.campuri-mesaj {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.2rem 1.25rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+}
+.campuri-mesaj dt {
+  color: var(--cerneala-slaba);
+}
+.campuri-mesaj dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.gol-camp {
+  color: var(--cerneala-slaba);
+  font-style: italic;
+}
+
+@media (max-width: 34rem) {
+  .rand-doua {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formular-butoane button {
+    flex: 1 1 100%;
+  }
+  .mesaj-primit time {
+    margin-left: 0;
+    flex-basis: 100%;
   }
 }
